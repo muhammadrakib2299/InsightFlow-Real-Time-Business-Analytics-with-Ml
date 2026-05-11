@@ -1,0 +1,86 @@
+[project]
+name = "insightflow"
+version = "0.1.0"
+description = "Open-source real-time BI platform with ML forecasting"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Md. Rakib" }]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.venv
+  | venv
+  | \.mypy_cache
+  | \.ruff_cache
+  | __pycache__
+  | dist
+  | build
+  | forecast/artifacts
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+  ".venv",
+  "venv",
+  "__pycache__",
+  "dist",
+  "build",
+  "forecast/artifacts",
+]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "UP",  # pyupgrade
+  "N",   # pep8-naming
+  "S",   # flake8-bandit (security)
+  "RUF", # ruff-specific
+]
+ignore = [
+  "E501", # line length handled by black
+  "S101", # asserts allowed in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+"**/tests/**/*.py" = ["S101", "S105", "S106"]
+"scripts/**/*.py" = ["S311"] # pseudo-random ok for synthetic seed data
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "insightflow"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_return_any = true
+exclude = [
+  "venv/",
+  ".venv/",
+  "build/",
+  "dist/",
+  "forecast/artifacts/",
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["ingestion/tests", "forecast/tests", "scripts/tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+  "ignore::DeprecationWarning",
+]
