@@ -1,0 +1,125 @@
+# ============================================================
+# Node / npm / pnpm / yarn
+# ============================================================
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.yarn-integrity
+.pnp.*
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# NestJS / TS build output
+dist/
+build/
+
+# Coverage / test artifacts
+coverage/
+*.lcov
+.nyc_output/
+
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.hypothesis/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ============================================================
+# ML artifacts
+# ============================================================
+forecast/artifacts/
+*.pkl
+*.joblib
+*.onnx
+mlruns/
+
+# ============================================================
+# Env / secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================================================
+# OS / editor
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ============================================================
+# Docker / data volumes
+# ============================================================
+.docker-data/
+volumes/
+clickhouse-data/
+kafka-data/
+redpanda-data/
+postgres-data/
+redis-data/
+
+# ============================================================
+# Prisma generated
+# ============================================================
+api/prisma/migrations/*/migration.lock
+**/prisma/.client/
+
+# ============================================================
+# Playwright / e2e
+# ============================================================
+playwright-report/
+test-results/
+playwright/.cache/
+
+# ============================================================
+# Misc
+# ============================================================
+tmp/
+.tmp/
+*.bak
+*.orig
