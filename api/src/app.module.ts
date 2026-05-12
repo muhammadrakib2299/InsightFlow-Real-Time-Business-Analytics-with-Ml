@@ -9,6 +9,7 @@ import { DashboardsModule } from './dashboards/dashboards.module';
 import { EventsModule } from './events/events.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ForecastModule } from './forecast/forecast.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ForecastModule } from './forecast/forecast.module';
     EventsModule,
     RealtimeModule,
     ForecastModule,
+    AlertsModule,
   ],
   controllers: [HealthController],
 })
