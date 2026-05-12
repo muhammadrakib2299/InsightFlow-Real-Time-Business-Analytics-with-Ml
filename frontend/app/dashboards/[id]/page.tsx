@@ -7,7 +7,9 @@ import { KpiTile } from '@/components/widgets/KpiTile';
 import { ForecastBand } from '@/components/widgets/ForecastBand';
 import { CohortHeatmap } from '@/components/widgets/CohortHeatmap';
 import { FunnelChart } from '@/components/widgets/FunnelChart';
+import { FilterPanel } from '@/components/layout/FilterPanel';
 import { createWidget, getDashboard } from '@/lib/dashboards';
+import { defaultFilters, type DashboardFilters } from '@/lib/filters';
 
 const KPI_METRICS = [
   { key: 'mrr', label: 'MRR' },
@@ -23,6 +25,7 @@ export default function DashboardPage() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [metric, setMetric] = useState('mrr');
+  const [filters, setFilters] = useState<DashboardFilters>(() => defaultFilters(30));
 
   const dash = useQuery({
     queryKey: ['dashboard', dashboardId],
@@ -84,6 +87,8 @@ export default function DashboardPage() {
           </button>
         </div>
       )}
+
+      <FilterPanel value={filters} onChange={setFilters} />
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {dash.data?.widgets.length === 0 && (
