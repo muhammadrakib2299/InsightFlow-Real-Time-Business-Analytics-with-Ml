@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { KpiTile } from '@/components/widgets/KpiTile';
 import { ForecastBand } from '@/components/widgets/ForecastBand';
+import { CohortHeatmap } from '@/components/widgets/CohortHeatmap';
+import { FunnelChart } from '@/components/widgets/FunnelChart';
 import { createWidget, getDashboard } from '@/lib/dashboards';
 
 const KPI_METRICS = [
@@ -94,6 +96,9 @@ export default function DashboardPage() {
             metric?: string;
             horizonDays?: number;
             modelKind?: 'prophet' | 'arima';
+            windowDays?: number;
+            steps?: string[];
+            windowHours?: number;
           };
           if (w.type === 'kpi') {
             return (
@@ -112,6 +117,30 @@ export default function DashboardPage() {
                   title={w.title}
                   horizonDays={cfg.horizonDays ?? 30}
                   modelKind={cfg.modelKind}
+                />
+              </div>
+            );
+          }
+          if (w.type === 'cohort') {
+            return (
+              <div key={w.id} className="sm:col-span-2 lg:col-span-3">
+                <CohortHeatmap title={w.title} windowDays={cfg.windowDays ?? 84} />
+              </div>
+            );
+          }
+          if (w.type === 'funnel') {
+            const steps = cfg.steps ?? [
+              'signup',
+              'subscription_started',
+              'subscription_payment',
+            ];
+            return (
+              <div key={w.id} className="sm:col-span-2 lg:col-span-3">
+                <FunnelChart
+                  title={w.title}
+                  steps={steps}
+                  windowDays={cfg.windowDays ?? 30}
+                  windowHours={cfg.windowHours ?? 24 * 7}
                 />
               </div>
             );

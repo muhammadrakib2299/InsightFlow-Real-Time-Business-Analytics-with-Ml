@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { CohortQueryDto } from './dto/cohort-query.dto';
+import { FunnelQueryDto } from './dto/funnel-query.dto';
 import { KpiQueryDto } from './dto/kpi-query.dto';
 import { EventsService } from './events.service';
 import { METRICS } from './metrics';
@@ -35,5 +36,16 @@ export class EventsController {
   @Get('cohort')
   async cohort(@Req() req: WorkspaceRequest, @Query() q: CohortQueryDto) {
     return this.events.cohort(req.workspace.id, q.from, q.to);
+  }
+
+  @Get('funnel')
+  async funnel(@Req() req: WorkspaceRequest, @Query() q: FunnelQueryDto) {
+    return this.events.funnel(
+      req.workspace.id,
+      q.steps,
+      q.from,
+      q.to,
+      q.windowHours ?? 24 * 7,
+    );
   }
 }
