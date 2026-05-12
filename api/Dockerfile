@@ -17,6 +17,7 @@ FROM deps AS dev
 ENV NODE_ENV=development
 COPY tsconfig.json nest-cli.json ./
 COPY src ./src
+RUN npx prisma generate
 EXPOSE 4000
 CMD ["npm", "run", "start:dev"]
 

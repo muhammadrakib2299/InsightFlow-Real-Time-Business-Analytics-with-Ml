@@ -3,12 +3,16 @@
 # Production-ready single-host configuration. The CADDY_DOMAIN env var picks
 # whether we get automatic TLS from Let's Encrypt or stay on the internal
 # self-signed cert (when set to "localhost").
+#
+# NOTE: the `rate_limit` directive used in the prod build of this Caddyfile
+# is a third-party module (mholt/caddy-ratelimit) and is NOT included in
+# the official caddy:2.8-alpine image. For local dev we run without it
+# and rely on the in-app NestJS Throttler. For prod, build a custom Caddy
+# image with `xcaddy build --with github.com/mholt/caddy-ratelimit` and
+# re-enable the rate_limit blocks below.
 
 {
 	email {$CADDY_EMAIL}
-
-	# Rate limit ordering — first match wins.
-	order rate_limit before reverse_proxy
 }
 
 # ---------- Public dashboard + API ----------
@@ -25,17 +29,15 @@
 		-Server
 	}
 
-	# Per-IP rate limit at the edge.
-	# Caddy 2.8 ships a basic rate_limit module; if your build doesn't
-	# include it, this directive is a no-op (we also enforce in-app via
-	# @nestjs/throttler on the API layer).
-	rate_limit {
-		zone dashboard {
-			key {remote_host}
-			events 100
-			window 1s
-		}
-	}
+	# Per-IP rate limit — requires the rate_limit module (see note above).
+	# Uncomment after building Caddy with --with github.com/mholt/caddy-ratelimit
+	# rate_limit {
+	# 	zone dashboard {
+	# 		key {remote_host}
+	# 		events 100
+	# 		window 1s
+	# 	}
+	# }
 
 	# WebSocket bridge (Socket.IO)
 	@ws {
@@ -84,19 +86,19 @@ ingest.{$CADDY_DOMAIN} {
 	@options method OPTIONS
 	respond @options 204
 
-	# Ingest rate limit — keyed by API key first, falling back to IP.
-	rate_limit {
-		zone ingest_per_key {
-			key {http.request.header.X-Api-Key}
-			events 1000
-			window 1s
-		}
-		zone ingest_per_ip {
-			key {remote_host}
-			events 200
-			window 1s
-		}
-	}
+	# Per-key ingest rate limit — same module dependency as above.
+	# rate_limit {
+	# 	zone ingest_per_key {
+	# 		key {http.request.header.X-Api-Key}
+	# 		events 1000
+	# 		window 1s
+	# 	}
+	# 	zone ingest_per_ip {
+	# 		key {remote_host}
+	# 		events 200
+	# 		window 1s
+	# 	}
+	# }
 
 	reverse_proxy ingestion:5000 {
 		header_up Host {host}

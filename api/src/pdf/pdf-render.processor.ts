@@ -106,8 +106,10 @@ export class PdfRenderProcessor extends WorkerHost {
         localStorage.setItem('if.access', token);
       }, accessToken);
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 60_000 });
-      // Give widgets a moment to settle (Recharts / React Query)
-      await page.waitForTimeout(2000);
+      // Give widgets a moment to settle (Recharts / React Query).
+      // `page.waitForTimeout` was removed in puppeteer v22 — use the
+      // node setTimeout primitive instead.
+      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
