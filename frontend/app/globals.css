@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 250 250 252;
+  --bg-subtle: 240 240 245;
+  --fg: 16 18 24;
+  --fg-muted: 96 100 112;
+  --accent: 14 116 144;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.dark {
+  --bg: 12 14 20;
+  --bg-subtle: 22 24 32;
+  --fg: 235 238 244;
+  --fg-muted: 156 163 175;
+  --accent: 56 189 248;
+}
+
+html,
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
