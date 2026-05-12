@@ -11,7 +11,24 @@
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-FFCC01?logo=clickhouse&logoColor=black)](https://clickhouse.com/)
 [![Kafka](https://img.shields.io/badge/Kafka-231F20?logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
 
-**Live demo:** _coming soon_ · **Docs:** [`docs/`](./docs)
+**Live demo:** _coming soon_ · **Docs:** [`docs/`](./docs) · **Deploy:** [`docs/deploy-hetzner.md`](./docs/deploy-hetzner.md)
+
+## Build status (v0.1)
+
+| Milestone | What it includes | Status |
+|---|---|---|
+| **M0** — Decisions locked | ADR-001..005, env template, container images pinned | ✅ |
+| **M1** — Skeleton + ingestion | docker-compose stack, ClickHouse schema + 3 MVs, ingestion REST + consumer | ✅ |
+| **M2** — Dashboard MVP | auth, workspaces, dashboards/widgets CRUD, BFF KPI + Redis cache, live KpiTile via WebSocket | ✅ |
+| **M3** — Forecasting | Prophet + ARIMA runners, registry, /forecast + 24h cache, ForecastBand widget, model card page | ✅ |
+| **M4** — Anomaly + alerts | rolling z-score + IQR, alert CRUD + 5-min cron, Resend/Slack/webhook notifiers, live toast | ✅ |
+| **M5** — Cohort, funnel, PDF | cohort heatmap, windowFunnel, FilterPanel, BullMQ + Puppeteer PDF export to MinIO | ✅ |
+| **M6** — Hardening + deploy | Caddy rate limits, CORS allowlist, signed share links, k6 load tests, Hetzner runbook + backup | ✅ |
+| **M7** — Docs + demo | architecture.md, data-model.md, lessons.md, README finalised | ✅ |
+
+`docker compose -f infra/docker-compose.yml up -d --wait` boots the full stack;
+`scripts/smoke.sh` is the end-to-end smoke test (signup → API key → ingest →
+ClickHouse → BFF).
 
 ---
 
@@ -161,17 +178,56 @@ insightflow/
 ### One-command run
 
 ```bash
-git clone https://github.com/<your-username>/insightflow.git
-cd insightflow
+git clone https://github.com/muhammadrakib2299/InsightFlow-Real-Time-Business-Analytics-with-Ml.git
+cd InsightFlow-Real-Time-Business-Analytics-with-Ml
 cp .env.example .env
-docker compose up -d
+docker compose -f infra/docker-compose.yml up -d --wait
 ```
 
-After ~30 seconds the stack is up:
+`--wait` blocks until every healthcheck passes (~3–5 min on first run while
+Prophet's cmdstan compiles). When it returns:
 
 - Dashboard: http://localhost:3000
-- API: http://localhost:4000
+- API: http://localhost:4000 (`/health`, `/ready` for probes)
 - Forecast service: http://localhost:8000
+- Ingestion: http://localhost:5000
+- ClickHouse: http://localhost:8123
+- MinIO console: http://localhost:9001 (creds from `.env`)
+
+### Seed the demo dataset
+
+```bash
+# 1. Sign up + create a workspace
+curl -s http://localhost:4000/api/auth/signup \
+  -H 'content-type: application/json' \
+  -d '{"email":"demo@example.com","password":"demo-password-1234"}' | jq
+
+# 2. Log in, save the accessToken + workspace.id, mint an API key:
+curl -s -X POST http://localhost:4000/api/workspaces/<id>/api-keys \
+  -H "authorization: Bearer <token>" \
+  -H 'content-type: application/json' \
+  -d '{"name":"seed"}' | jq
+
+# 3. Seed 90 days of synthetic SaaS events through the public ingest
+python3 scripts/seed_demo.py \
+  --endpoint http://localhost:5000 \
+  --api-key ifk_live_xxx \
+  --days 90
+
+# 4. Trigger the first model fit
+curl -X POST http://localhost:8000/retrain \
+  -H "X-Retrain-Secret: $(grep RETRAIN_SHARED_SECRET .env | cut -d= -f2)" \
+  -d '{}'
+```
+
+### End-to-end smoke test
+
+```bash
+./scripts/smoke.sh
+```
+
+Probes /health on every service, signs up a fresh user, mints a key, posts
+one event, polls ClickHouse for it, and asserts the BFF allowlist gate.
 - ClickHouse HTTP: http://localhost:8123
 - Kafka UI (Redpanda Console): http://localhost:8080
 
