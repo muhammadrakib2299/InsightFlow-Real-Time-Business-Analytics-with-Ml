@@ -1,0 +1,257 @@
+// InsightFlow — Postgres application metadata.
+// ClickHouse holds the event store; this schema only carries tenancy,
+// auth, dashboard definitions, alert config, and PDF job state.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Identity + tenancy
+// -----------------------------------------------------------------------------
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  displayName   String?  @map("display_name")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  memberships     WorkspaceMember[]
+  ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
+  apiKeys         ApiKey[]
+  shareLinks     ShareLink[]
+  dashboards     Dashboard[]       @relation("DashboardCreatedBy")
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  ownerId   String   @map("owner_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner       User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members     WorkspaceMember[]
+  apiKeys     ApiKey[]
+  dashboards  Dashboard[]
+  alerts      Alert[]
+  alertEvents AlertEvent[]
+  shareLinks  ShareLink[]
+
+  @@map("workspaces")
+}
+
+enum WorkspaceRole {
+  owner
+  member
+  viewer
+
+  @@map("workspace_role")
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid()) @db.Uuid
+  workspaceId String        @map("workspace_id") @db.Uuid
+  userId      String        @map("user_id") @db.Uuid
+  role        WorkspaceRole
+  invitedAt   DateTime      @default(now()) @map("invited_at")
+  joinedAt    DateTime?     @map("joined_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+// -----------------------------------------------------------------------------
+// API keys (used by ingestion to authenticate event posts)
+// -----------------------------------------------------------------------------
+
+model ApiKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  createdById String    @map("created_by_id") @db.Uuid
+  name        String
+  prefix      String    @unique // first 12 chars, used for lookup UX
+  hash        String // argon2 hash of the full key
+  scopes      String[]  @default(["events:write"])
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId])
+  @@index([prefix, revokedAt])
+  @@map("api_keys")
+}
+
+// -----------------------------------------------------------------------------
+// Dashboards + widgets
+// -----------------------------------------------------------------------------
+
+model Dashboard {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  createdById String   @map("created_by_id") @db.Uuid
+  name        String
+  description String?
+  layoutJson  Json     @default("[]") @map("layout_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy  User        @relation("DashboardCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  widgets    Widget[]
+  shareLinks ShareLink[]
+
+  @@index([workspaceId])
+  @@map("dashboards")
+}
+
+enum WidgetType {
+  kpi
+  line
+  bar
+  funnel
+  cohort
+  forecast
+  table
+
+  @@map("widget_type")
+}
+
+model Widget {
+  id          String     @id @default(uuid()) @db.Uuid
+  dashboardId String     @map("dashboard_id") @db.Uuid
+  type        WidgetType
+  title       String
+  configJson  Json       @default("{}") @map("config_json")
+  positionX   Int        @default(0) @map("position_x")
+  positionY   Int        @default(0) @map("position_y")
+  width       Int        @default(4)
+  height      Int        @default(3)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([dashboardId])
+  @@map("widgets")
+}
+
+// -----------------------------------------------------------------------------
+// Alerts
+// -----------------------------------------------------------------------------
+
+enum AlertMethod {
+  zscore
+  iqr
+  threshold
+
+  @@map("alert_method")
+}
+
+model Alert {
+  id              String      @id @default(uuid()) @db.Uuid
+  workspaceId     String      @map("workspace_id") @db.Uuid
+  name            String
+  metric          String
+  method          AlertMethod
+  thresholdParams Json        @map("threshold_params")
+  channelsJson    Json        @default("[]") @map("channels_json")
+  cooldownSeconds Int         @default(3600) @map("cooldown_seconds")
+  enabled         Boolean     @default(true)
+  lastFiredAt     DateTime?   @map("last_fired_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  events    AlertEvent[]
+
+  @@index([workspaceId, enabled])
+  @@map("alerts")
+}
+
+model AlertEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  alertId     String   @map("alert_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  firedAt     DateTime @default(now()) @map("fired_at")
+  value       Float
+  expected    Float?
+  payload     Json     @default("{}")
+
+  alert     Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, firedAt])
+  @@index([alertId, firedAt])
+  @@map("alert_events")
+}
+
+// -----------------------------------------------------------------------------
+// Signed share links (read-only public dashboards)
+// -----------------------------------------------------------------------------
+
+model ShareLink {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  dashboardId String    @map("dashboard_id") @db.Uuid
+  createdById String    @map("created_by_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime? @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId])
+  @@index([dashboardId])
+  @@map("share_links")
+}
+
+// -----------------------------------------------------------------------------
+// PDF export jobs
+// -----------------------------------------------------------------------------
+
+enum PdfJobStatus {
+  queued
+  running
+  done
+  failed
+
+  @@map("pdf_job_status")
+}
+
+model PdfJob {
+  id           String       @id @default(uuid()) @db.Uuid
+  workspaceId  String       @map("workspace_id") @db.Uuid
+  dashboardId  String       @map("dashboard_id") @db.Uuid
+  requestedBy  String       @map("requested_by_id") @db.Uuid
+  status       PdfJobStatus @default(queued)
+  s3Key        String?      @map("s3_key")
+  errorMessage String?      @map("error_message")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  completedAt  DateTime?    @map("completed_at")
+
+  @@index([workspaceId, status])
+  @@map("pdf_jobs")
+}
