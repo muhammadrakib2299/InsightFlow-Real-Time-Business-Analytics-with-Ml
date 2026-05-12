@@ -181,10 +181,10 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
   - [ ] Dashboard list + builder (drag-resize widgets — react-grid-layout)
   - [ ] `KpiTile` widget reading live data, "Live" pulse dot
   - [ ] React Query for fetches, Socket.IO for live updates
-- [ ] **Seed script** (`scripts/seed_demo.py`):
-  - [ ] 90 days of synthetic events: signups, subscriptions, churn, payments
-  - [ ] Realistic seasonality (weekly + light yearly), one fake anomaly mid-window for demo
-  - [ ] Posts via the public ingest API (proves the contract, doesn't bypass it)
+- [x] **Seed script** (`scripts/seed_demo.py`):
+  - [x] 90 days of synthetic events: signups, subscriptions, churn, payments
+  - [x] Realistic seasonality (weekly + light yearly), one fake anomaly mid-window for demo
+  - [x] Posts via the public ingest API (proves the contract, doesn't bypass it)
 
 ---
 
