@@ -31,6 +31,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/models" className="hover:text-fg">
             Models
           </Link>
+          <Link href="/alerts" className="hover:text-fg">
+            Alerts
+          </Link>
         </nav>
         <div className="ml-auto flex items-center gap-3 text-sm text-fg-muted">
           {workspace && <span className="hidden sm:inline">{workspace.name}</span>}
