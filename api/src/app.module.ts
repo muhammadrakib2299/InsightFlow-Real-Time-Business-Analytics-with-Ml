@@ -11,6 +11,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { ForecastModule } from './forecast/forecast.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { PdfModule } from './pdf/pdf.module';
+import { ShareModule } from './share/share.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PdfModule } from './pdf/pdf.module';
     ForecastModule,
     AlertsModule,
     PdfModule,
+    ShareModule,
   ],
   controllers: [HealthController],
 })
