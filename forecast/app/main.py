@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from .routers import anomaly as anomaly_router
 from .routers import forecast as forecast_router
 from .routers import retrain as retrain_router
+from .services.cache import close_cache
 from .settings import get_settings
 
 
@@ -36,6 +37,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     log.info("starting", env=settings.app_env, artifacts=settings.artifacts_dir)
     yield
     log.info("stopping")
+    await close_cache()
 
 
 app = FastAPI(
