@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { EventsModule } from './events/events.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { EventsModule } from './events/events.module';
     WorkspacesModule,
     DashboardsModule,
     EventsModule,
+    RealtimeModule,
   ],
   controllers: [HealthController],
 })
