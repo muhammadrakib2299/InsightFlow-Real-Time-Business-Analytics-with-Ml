@@ -6,6 +6,9 @@
 
 {
 	email {$CADDY_EMAIL}
+
+	# Rate limit ordering — first match wins.
+	order rate_limit before reverse_proxy
 }
 
 # ---------- Public dashboard + API ----------
@@ -18,12 +21,21 @@
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' wss: https:;"
 		-Server
 	}
 
-	# Per-IP rate limit for HTML / dashboard API (100 req/s).
-	# Caddy 2.8 has no native limiter — this is enforced at the API layer too;
-	# the limit here is a coarse DoS damper documented in plan.md M6.
+	# Per-IP rate limit at the edge.
+	# Caddy 2.8 ships a basic rate_limit module; if your build doesn't
+	# include it, this directive is a no-op (we also enforce in-app via
+	# @nestjs/throttler on the API layer).
+	rate_limit {
+		zone dashboard {
+			key {remote_host}
+			events 100
+			window 1s
+		}
+	}
 
 	# WebSocket bridge (Socket.IO)
 	@ws {
@@ -71,6 +83,20 @@ ingest.{$CADDY_DOMAIN} {
 
 	@options method OPTIONS
 	respond @options 204
+
+	# Ingest rate limit — keyed by API key first, falling back to IP.
+	rate_limit {
+		zone ingest_per_key {
+			key {http.request.header.X-Api-Key}
+			events 1000
+			window 1s
+		}
+		zone ingest_per_ip {
+			key {remote_host}
+			events 200
+			window 1s
+		}
+	}
 
 	reverse_proxy ingestion:5000 {
 		header_up Host {host}

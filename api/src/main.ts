@@ -13,8 +13,24 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   app.use(helmet({ contentSecurityPolicy: false }));
+
+  // CORS — locked down to the configured dashboard origin(s). Accept a
+  // comma-separated list so we can allow both http://localhost:3000 in
+  // dev and the prod domain at the same time. * is permitted only when
+  // explicitly configured (e.g. local dev with no domain) — never the
+  // default in production.
+  const corsConfig = (config.get<string>('CORS_ORIGIN', '') as string).trim();
+  const allowList = corsConfig
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: config.get<string>('CORS_ORIGIN', '*'),
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // same-origin / curl
+      if (allowList.length === 0) return cb(null, true);
+      if (allowList.includes('*') || allowList.includes(origin)) return cb(null, true);
+      return cb(new Error('CORS: origin not allowed'), false);
+    },
     credentials: true,
   });
   app.useGlobalPipes(
