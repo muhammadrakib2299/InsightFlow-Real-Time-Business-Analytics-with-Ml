@@ -140,7 +140,7 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
   - [x] Micro-batch insert to ClickHouse (1-second window or 1000 rows, whichever first)
   - [x] Idempotency on `(workspace_id, event_id)` via `ReplacingMergeTree`
   - [x] Graceful shutdown: drain in-flight batch, commit offsets
-- [ ] **End-to-end smoke test**: shell script that POSTs an event and asserts it appears in `SELECT count() FROM events` within 3 seconds
+- [x] **End-to-end smoke test**: shell script that POSTs an event and asserts it appears in `SELECT count() FROM events` within 3 seconds
 - [ ] **Tests**:
   - [ ] pytest for ingestion: API key auth, schema validation, rate limit, batch insert
   - [ ] pytest for consumer: enrichment, idempotency, batch flush
