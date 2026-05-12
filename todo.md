@@ -8,14 +8,14 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 ## Phase 0 — Decisions to make first
 
-- [ ] **Demo dataset shape** — pick a flavour and stick to it: SaaS subscriptions (MRR / churn / ARPU) or e-commerce (orders / AOV / cart abandonment). Default: **SaaS subscriptions**, since it gives the best forecasting story.
-- [ ] **Hosting** — single Hetzner CX22 (4 GB / 2 vCPU / ~$5/mo) running the whole stack via Caddy + docker-compose. Confirm credit availability before M6.
-- [ ] **Domain name** — pick something cheap (`insightflow.dev` or `tryinsightflow.com`); register before M6 so TLS issuance has time.
-- [ ] **Auth provider** — email/password via NestJS + bcrypt, magic-link as v2. No Auth0 (cost + lock-in for a portfolio piece).
-- [ ] **Kafka distribution** — Redpanda (single binary, KRaft mode, no Zookeeper, easier ops) vs Apache Kafka via Bitnami image. Default: **Redpanda** for dev/demo, document Apache Kafka as the production path.
-- [ ] **Email provider for alerts** — Resend (clean API, generous free tier) vs Postmark. Default: **Resend**.
-- [ ] **Forecast cadence** — nightly retrain at 02:00 UTC; cap training window to last 18 months; serve cached forecasts from Redis with 24 h TTL.
-- [ ] **Multi-tenant row-key choice** — `workspace_id` as first ORDER BY column in every ClickHouse table. Document in ADR-005 before any schema is written.
+- [x] **Demo dataset shape** — **SaaS subscriptions** (MRR / churn / ARPU / DAU). Locked 2026-05-12 for the strongest forecasting story; e-commerce parked for v2.
+- [x] **Hosting** — single **Hetzner CX22** (4 GB / 2 vCPU / ~$5/mo) running the whole stack via Caddy + docker-compose. Credit availability to confirm before M6.
+- [ ] **Domain name** — deferred 2026-05-12. Candidates: `insightflow.dev` or `tryinsightflow.com`. Must be registered before M6 so TLS issuance has time.
+- [x] **Auth provider** — **email/password via NestJS + bcrypt**, magic-link as v2. No Auth0 (cost + lock-in for a portfolio piece).
+- [x] **Kafka distribution** — **Redpanda** (single binary, KRaft mode, no Zookeeper) for dev/demo; Apache Kafka documented as production path in ADR-002.
+- [x] **Email provider for alerts** — **Resend** (clean API, generous free tier).
+- [x] **Forecast cadence** — nightly retrain at **02:00 UTC**; training window capped to **18 months**; forecasts served from Redis with **24 h TTL**.
+- [x] **Multi-tenant row-key choice** — **`workspace_id` as first ORDER BY column** in every ClickHouse table. To be documented in ADR-005 before any schema is written.
 
 ---
 
