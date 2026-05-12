@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { CommonModule } from './common/common.module';
 import { HealthController } from './common/health.controller';
 import { AuthModule } from './auth/auth.module';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
     ]),
     CommonModule,
     AuthModule,
+    WorkspacesModule,
   ],
   controllers: [HealthController],
 })
