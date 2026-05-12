@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.env
+.env.local
+.git
+.gitignore
+.eslintrc.cjs
+.eslintcache
+*.log
+test/__snapshots__
