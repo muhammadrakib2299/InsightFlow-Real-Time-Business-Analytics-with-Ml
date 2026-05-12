@@ -137,6 +137,105 @@ export class EventsService {
     return d;
   }
 
+  async funnel(
+    workspaceId: string,
+    stepsCsv: string,
+    fromIso: string,
+    toIso: string,
+    windowHours: number,
+  ): Promise<{
+    steps: Array<{ name: string; reached: number; conversion: number }>;
+    cache: { hit: boolean; ttlSeconds: number };
+  }> {
+    const from = this.coerceTimestamp(fromIso, 'from');
+    const to = this.coerceTimestamp(toIso, 'to');
+    if (from.getTime() >= to.getTime()) {
+      throw new BadRequestException('from must be earlier than to');
+    }
+    const steps = stepsCsv.split(',').map((s) => s.trim()).filter(Boolean);
+    if (steps.length < 2 || steps.length > 8) {
+      throw new BadRequestException('steps must be 2..8 event names');
+    }
+    for (const s of steps) {
+      if (!/^[a-zA-Z0-9_.:-]{1,128}$/.test(s)) {
+        throw new BadRequestException(`invalid step name: ${s}`);
+      }
+    }
+    if (windowHours < 1 || windowHours > 30 * 24) {
+      throw new BadRequestException('window_hours must be 1..720');
+    }
+
+    const cacheKey =
+      `funnel:${workspaceId}:${windowHours}:${steps.join(',')}:` +
+      `${from.toISOString()}:${to.toISOString()}`;
+    const cached = await this.redis.client.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached) as Awaited<ReturnType<EventsService['funnel']>>;
+      parsed.cache = { hit: true, ttlSeconds: 60 };
+      return parsed;
+    }
+
+    const stepConds = steps.map((_, i) => `event_name = {step${i}:String}`).join(', ');
+    const windowSeconds = windowHours * 3600;
+    const sql = `
+      SELECT
+        funnel_level,
+        count() AS users
+      FROM (
+        SELECT
+          user_id,
+          windowFunnel(${windowSeconds})(occurred_at, ${stepConds}) AS funnel_level
+        FROM events
+        WHERE workspace_id = {workspace_id:UUID}
+          AND occurred_at >= {from:DateTime}
+          AND occurred_at <  {to:DateTime}
+          AND user_id != ''
+        GROUP BY workspace_id, user_id
+      )
+      GROUP BY funnel_level
+      ORDER BY funnel_level
+    `;
+
+    const stepParams: Record<string, string> = {};
+    steps.forEach((name, i) => {
+      stepParams[`step${i}`] = name;
+    });
+
+    const rows = await withWorkspace(this.ch, workspaceId, async (q) => {
+      const res = await q.query({
+        query: sql,
+        query_params: {
+          ...stepParams,
+          from: from.toISOString().replace('T', ' ').slice(0, 19),
+          to: to.toISOString().replace('T', ' ').slice(0, 19),
+        },
+        format: 'JSONEachRow',
+      });
+      return (await res.json()) as Array<{ funnel_level: number | string; users: number | string }>;
+    });
+
+    const levelCounts: number[] = new Array(steps.length + 1).fill(0);
+    for (const r of rows) {
+      const lvl = Number(r.funnel_level);
+      const u = Number(r.users);
+      if (lvl >= 0 && lvl <= steps.length) levelCounts[lvl] = u;
+    }
+    const reached: number[] = new Array(steps.length).fill(0);
+    for (let i = steps.length; i >= 1; i -= 1) {
+      reached[i - 1] = levelCounts[i] + (i < steps.length ? reached[i] : 0);
+    }
+    const first = reached[0] || 0;
+    const out = steps.map((name, i) => ({
+      name,
+      reached: reached[i],
+      conversion: first > 0 ? reached[i] / first : 0,
+    }));
+
+    const payload = { steps: out, cache: { hit: false, ttlSeconds: 60 } };
+    await this.redis.client.set(cacheKey, JSON.stringify(payload), 'EX', 60);
+    return payload;
+  }
+
   async cohort(
     workspaceId: string,
     fromIso: string,
