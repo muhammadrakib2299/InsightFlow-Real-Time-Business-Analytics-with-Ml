@@ -121,11 +121,11 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 - [x] **docker-compose.yml** brings up: redpanda, clickhouse, postgres, redis, caddy, api, ingestion, forecast, frontend
 - [x] Add healthchecks to every service; `depends_on: condition: service_healthy` ordering
-- [ ] **ClickHouse schema** (`infra/clickhouse/init.sql`):
-  - [ ] `events` table per `plan.md` data-model section
-  - [ ] `mv_kpi_hourly` materialized view (revenue, count by event_name, hour)
-  - [ ] `mv_cohort_daily` materialized view (signup-cohort × activity-day)
-  - [ ] `mv_funnel_step_daily` materialized view (placeholder, populated in M5)
+- [x] **ClickHouse schema** (`infra/clickhouse/init.sql`):
+  - [x] `events` table per `plan.md` data-model section
+  - [x] `mv_kpi_hourly` materialized view (revenue, count by event_name, hour)
+  - [x] `mv_cohort_daily` materialized view (signup-cohort × activity-day)
+  - [x] `mv_funnel_step_daily` materialized view (placeholder, populated in M5)
 - [ ] **Postgres + Prisma** in `api/`:
   - [ ] Schema for users, workspaces, workspace_members, api_keys, dashboards, widgets, alerts, share_links
   - [ ] Initial migration committed
