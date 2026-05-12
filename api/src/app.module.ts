@@ -10,6 +10,7 @@ import { EventsModule } from './events/events.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ForecastModule } from './forecast/forecast.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { PdfModule } from './pdf/pdf.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AlertsModule } from './alerts/alerts.module';
     RealtimeModule,
     ForecastModule,
     AlertsModule,
+    PdfModule,
   ],
   controllers: [HealthController],
 })
