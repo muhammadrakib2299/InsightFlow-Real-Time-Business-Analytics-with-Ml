@@ -129,17 +129,17 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 - [ ] **Postgres + Prisma** in `api/`:
   - [ ] Schema for users, workspaces, workspace_members, api_keys, dashboards, widgets, alerts, share_links
   - [ ] Initial migration committed
-- [ ] **Ingestion REST** (`ingestion/app/ingest_api.py`):
-  - [ ] `POST /v1/events` accepts single + batch (`events: [...]`) with API key auth
-  - [ ] Pydantic schema validation, 400 on malformed
-  - [ ] Produces to Kafka topic `events.raw` with partition key = `workspace_id`
-  - [ ] Per-key rate limit (1k events/s sustained, 5k burst) via Redis token bucket
-- [ ] **Kafka consumer** (`ingestion/app/consumer.py`):
-  - [ ] aiokafka consumer group `events.consumer`
-  - [ ] Geo lookup via MaxMind GeoLite2 (free tier), UA parse via `ua-parser`
-  - [ ] Micro-batch insert to ClickHouse (1-second window or 1000 rows, whichever first)
-  - [ ] Idempotency on `(workspace_id, event_id)` via `ReplacingMergeTree`
-  - [ ] Graceful shutdown: drain in-flight batch, commit offsets
+- [x] **Ingestion REST** (`ingestion/app/ingest_api.py`):
+  - [x] `POST /v1/events` accepts single + batch (`events: [...]`) with API key auth
+  - [x] Pydantic schema validation, 400 on malformed
+  - [x] Produces to Kafka topic `events.raw` with partition key = `workspace_id`
+  - [x] Per-key rate limit (1k events/s sustained, 5k burst) via Redis token bucket
+- [x] **Kafka consumer** (`ingestion/app/consumer.py`):
+  - [x] aiokafka consumer group `events.consumer`
+  - [x] Geo lookup via MaxMind GeoLite2 (free tier), UA parse via `ua-parser`
+  - [x] Micro-batch insert to ClickHouse (1-second window or 1000 rows, whichever first)
+  - [x] Idempotency on `(workspace_id, event_id)` via `ReplacingMergeTree`
+  - [x] Graceful shutdown: drain in-flight batch, commit offsets
 - [ ] **End-to-end smoke test**: shell script that POSTs an event and asserts it appears in `SELECT count() FROM events` within 3 seconds
 - [ ] **Tests**:
   - [ ] pytest for ingestion: API key auth, schema validation, rate limit, batch insert

@@ -146,6 +146,26 @@ services:
       retries: 10
       start_period: 20s
 
+  ingestion-consumer:
+    <<: *svc-defaults
+    build:
+      context: ../ingestion
+      dockerfile: Dockerfile
+    command: ["python", "-m", "app.consumer"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    # No published port — pure worker.
+    healthcheck:
+      # Worker has no HTTP; healthy = process alive (pgrep returns 0 with a match).
+      test: ["CMD-SHELL", "pgrep -f 'app.consumer' >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   forecast:
     <<: *svc-defaults
     build:
