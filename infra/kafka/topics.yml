@@ -1,0 +1,47 @@
+# Kafka / Redpanda topic declarations for InsightFlow.
+#
+# These are applied by `scripts/create_topics.sh` (or manually with `rpk topic
+# create`). Redpanda will lazily create topics on first produce in dev, but we
+# declare them explicitly so partition counts and retention are reproducible.
+
+topics:
+  - name: events.raw
+    partitions: 6
+    replication_factor: 1
+    config:
+      # 7-day retention is enough for replay-on-MV-add; longer windows pull
+      # straight from ClickHouse.
+      retention.ms: 604800000        # 7 days
+      retention.bytes: -1
+      cleanup.policy: delete
+      compression.type: zstd
+      max.message.bytes: 1048576     # 1 MB
+    notes: |
+      Raw event stream. Partition key = workspace_id so per-tenant ordering is
+      preserved. Six partitions sized for the demo VPS — bump for production.
+
+  - name: events.tick
+    partitions: 3
+    replication_factor: 1
+    config:
+      # Tick stream is ephemeral — 1-hour retention, the WebSocket bridge
+      # consumes live and never replays.
+      retention.ms: 3600000
+      retention.bytes: 536870912     # 512 MB cap
+      cleanup.policy: delete
+      compression.type: zstd
+    notes: |
+      Aggregated metric ticks (per workspace, every 5s). Consumed by the
+      WebSocket bridge in api/. Never carries raw events — strictly small JSON
+      payloads with KPI deltas.
+
+  - name: alerts.fired
+    partitions: 3
+    replication_factor: 1
+    config:
+      retention.ms: 2592000000       # 30 days
+      cleanup.policy: delete
+      compression.type: zstd
+    notes: |
+      Fan-out of triggered alert events. Consumers: notifier workers (email,
+      Slack, webhook) plus the WebSocket bridge for toast notifications.

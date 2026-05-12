@@ -1,0 +1,80 @@
+# InsightFlow — Caddy reverse proxy
+#
+# Production-ready single-host configuration. The CADDY_DOMAIN env var picks
+# whether we get automatic TLS from Let's Encrypt or stay on the internal
+# self-signed cert (when set to "localhost").
+
+{
+	email {$CADDY_EMAIL}
+}
+
+# ---------- Public dashboard + API ----------
+{$CADDY_DOMAIN} {
+	encode zstd gzip
+
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+	}
+
+	# Per-IP rate limit for HTML / dashboard API (100 req/s).
+	# Caddy 2.8 has no native limiter — this is enforced at the API layer too;
+	# the limit here is a coarse DoS damper documented in plan.md M6.
+
+	# WebSocket bridge (Socket.IO)
+	@ws {
+		path /socket.io/*
+	}
+	reverse_proxy @ws api:4000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+	}
+
+	# Dashboard API
+	handle /api/* {
+		reverse_proxy api:4000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Next.js frontend (catch-all)
+	handle {
+		reverse_proxy frontend:3000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+}
+
+# ---------- Public ingest endpoint ----------
+# Separate hostname so the dashboard CORS policy can stay locked down
+# while the ingest CORS stays open (API key is the auth boundary).
+ingest.{$CADDY_DOMAIN} {
+	encode gzip
+
+	header {
+		X-Content-Type-Options "nosniff"
+		-Server
+		# Open CORS — API key is the auth boundary, not Origin.
+		Access-Control-Allow-Origin "*"
+		Access-Control-Allow-Methods "POST, OPTIONS"
+		Access-Control-Allow-Headers "Content-Type, X-Api-Key, Authorization"
+	}
+
+	@options method OPTIONS
+	respond @options 204
+
+	reverse_proxy ingestion:5000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+	}
+}

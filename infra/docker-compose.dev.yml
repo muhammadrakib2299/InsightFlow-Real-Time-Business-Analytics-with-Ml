@@ -1,0 +1,61 @@
+name: insightflow
+
+# Dev override — `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`.
+# Bind-mounts source for hot reload, exposes internal ports for direct access,
+# and disables Caddy (the dev frontend talks to the API directly on :4000).
+
+services:
+  api:
+    build:
+      target: dev
+    command: ["npm", "run", "start:dev"]
+    volumes:
+      - ../api/src:/app/src
+      - ../api/prisma:/app/prisma
+      - ../api/package.json:/app/package.json
+      - ../api/tsconfig.json:/app/tsconfig.json
+      - ../api/nest-cli.json:/app/nest-cli.json
+    environment:
+      NODE_ENV: development
+
+  ingestion:
+    build:
+      target: dev
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+    volumes:
+      - ../ingestion/app:/app/app
+      - ../ingestion/tests:/app/tests
+
+  forecast:
+    build:
+      target: dev
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    volumes:
+      - ../forecast/app:/app/app
+      - ../forecast/tests:/app/tests
+
+  frontend:
+    build:
+      target: dev
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ../frontend/app:/app/app
+      - ../frontend/components:/app/components
+      - ../frontend/lib:/app/lib
+      - ../frontend/package.json:/app/package.json
+      - ../frontend/tsconfig.json:/app/tsconfig.json
+      - ../frontend/next.config.mjs:/app/next.config.mjs
+      - ../frontend/tailwind.config.ts:/app/tailwind.config.ts
+      - ../frontend/postcss.config.mjs:/app/postcss.config.mjs
+
+  caddy:
+    profiles:
+      - disabled
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

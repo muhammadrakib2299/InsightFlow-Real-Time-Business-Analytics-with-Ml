@@ -119,8 +119,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 ## Phase 2 — Infrastructure + ingestion (Days 2–4) — M1
 
-- [ ] **docker-compose.yml** brings up: redpanda, clickhouse, postgres, redis, caddy, api, ingestion, forecast, frontend
-- [ ] Add healthchecks to every service; `depends_on: condition: service_healthy` ordering
+- [x] **docker-compose.yml** brings up: redpanda, clickhouse, postgres, redis, caddy, api, ingestion, forecast, frontend
+- [x] Add healthchecks to every service; `depends_on: condition: service_healthy` ordering
 - [ ] **ClickHouse schema** (`infra/clickhouse/init.sql`):
   - [ ] `events` table per `plan.md` data-model section
   - [ ] `mv_kpi_hourly` materialized view (revenue, count by event_name, hour)
