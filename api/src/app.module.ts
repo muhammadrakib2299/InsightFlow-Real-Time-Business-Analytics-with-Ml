@@ -8,6 +8,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { EventsModule } from './events/events.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { ForecastModule } from './forecast/forecast.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     DashboardsModule,
     EventsModule,
     RealtimeModule,
+    ForecastModule,
   ],
   controllers: [HealthController],
 })

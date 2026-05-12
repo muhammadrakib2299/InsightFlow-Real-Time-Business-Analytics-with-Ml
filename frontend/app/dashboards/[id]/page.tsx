@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { KpiTile } from '@/components/widgets/KpiTile';
+import { ForecastBand } from '@/components/widgets/ForecastBand';
 import { createWidget, getDashboard } from '@/lib/dashboards';
 
 const KPI_METRICS = [
@@ -89,23 +90,39 @@ export default function DashboardPage() {
           </div>
         )}
         {dash.data?.widgets.map((w) => {
-          if (w.type !== 'kpi') {
+          const cfg = w.configJson as {
+            metric?: string;
+            horizonDays?: number;
+            modelKind?: 'prophet' | 'arima';
+          };
+          if (w.type === 'kpi') {
             return (
-              <article
+              <KpiTile
                 key={w.id}
-                className="rounded-lg border border-bg-subtle/80 bg-bg-subtle/40 p-4 text-sm text-fg-muted"
-              >
-                {w.title} ({w.type}) — renderer not implemented yet
-              </article>
+                metric={cfg.metric ?? 'mrr'}
+                title={w.title}
+              />
             );
           }
-          const cfg = w.configJson as { metric?: string };
+          if (w.type === 'forecast') {
+            return (
+              <div key={w.id} className="sm:col-span-2 lg:col-span-3">
+                <ForecastBand
+                  metric={cfg.metric ?? 'mrr'}
+                  title={w.title}
+                  horizonDays={cfg.horizonDays ?? 30}
+                  modelKind={cfg.modelKind}
+                />
+              </div>
+            );
+          }
           return (
-            <KpiTile
+            <article
               key={w.id}
-              metric={cfg.metric ?? 'mrr'}
-              title={w.title}
-            />
+              className="rounded-lg border border-bg-subtle/80 bg-bg-subtle/40 p-4 text-sm text-fg-muted"
+            >
+              {w.title} ({w.type}) — renderer not implemented yet
+            </article>
           );
         })}
       </div>
