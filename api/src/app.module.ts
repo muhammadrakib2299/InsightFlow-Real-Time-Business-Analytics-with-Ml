@@ -6,6 +6,7 @@ import { HealthController } from './common/health.controller';
 import { AuthModule } from './auth/auth.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DashboardsModule } from './dashboards/dashboards.module';
     AuthModule,
     WorkspacesModule,
     DashboardsModule,
+    EventsModule,
   ],
   controllers: [HealthController],
 })
