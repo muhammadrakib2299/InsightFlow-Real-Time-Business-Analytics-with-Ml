@@ -136,4 +136,81 @@ export class EventsService {
     }
     return d;
   }
+
+  async cohort(
+    workspaceId: string,
+    fromIso: string,
+    toIso: string,
+  ): Promise<{
+    cohorts: Array<{ signup_day: string; cohort_size: number; weeks: number[] }>;
+    cache: { hit: boolean; ttlSeconds: number };
+  }> {
+    const from = this.coerceTimestamp(fromIso, 'from');
+    const to = this.coerceTimestamp(toIso, 'to');
+    if (from.getTime() >= to.getTime()) {
+      throw new BadRequestException('from must be earlier than to');
+    }
+
+    const cacheKey = `cohort:${workspaceId}:${from.toISOString()}:${to.toISOString()}`;
+    const cached = await this.redis.client.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached) as Awaited<ReturnType<EventsService['cohort']>>;
+      parsed.cache = { hit: true, ttlSeconds: 60 };
+      return parsed;
+    }
+
+    const sql = `
+      SELECT
+        toStartOfWeek(signup_day) AS cohort_week,
+        floor(dateDiff('day', signup_day, activity_day) / 7) AS week_offset,
+        uniqMerge(active_users) AS users
+      FROM cohort_daily
+      WHERE workspace_id = {workspace_id:UUID}
+        AND signup_day >= {from:DateTime}
+        AND signup_day <  {to:DateTime}
+        AND activity_day >= signup_day
+      GROUP BY cohort_week, week_offset
+      ORDER BY cohort_week, week_offset
+    `;
+
+    const rows = await withWorkspace(this.ch, workspaceId, async (q) => {
+      const res = await q.query({
+        query: sql,
+        query_params: {
+          from: from.toISOString().replace('T', ' ').slice(0, 19),
+          to: to.toISOString().replace('T', ' ').slice(0, 19),
+        },
+        format: 'JSONEachRow',
+      });
+      return (await res.json()) as Array<{
+        cohort_week: string;
+        week_offset: number | string;
+        users: number | string;
+      }>;
+    });
+
+    const byWeek = new Map<string, number[]>();
+    const sizes = new Map<string, number>();
+    for (const r of rows) {
+      const wk = r.cohort_week;
+      const off = Number(r.week_offset);
+      const u = Number(r.users);
+      if (off < 0 || off > 12) continue;
+      if (!byWeek.has(wk)) byWeek.set(wk, new Array(13).fill(0));
+      byWeek.get(wk)![off] = u;
+      if (off === 0) sizes.set(wk, u);
+    }
+
+    const cohorts = [...byWeek.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([signup_day, weeks]) => ({
+        signup_day,
+        cohort_size: sizes.get(signup_day) ?? weeks[0] ?? 0,
+        weeks,
+      }));
+
+    const payload = { cohorts, cache: { hit: false, ttlSeconds: 60 } };
+    await this.redis.client.set(cacheKey, JSON.stringify(payload), 'EX', 60);
+    return payload;
+  }
 }
