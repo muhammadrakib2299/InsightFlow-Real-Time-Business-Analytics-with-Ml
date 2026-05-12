@@ -5,6 +5,7 @@ import { CommonModule } from './common/common.module';
 import { HealthController } from './common/health.controller';
 import { AuthModule } from './auth/auth.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { DashboardsModule } from './dashboards/dashboards.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     CommonModule,
     AuthModule,
     WorkspacesModule,
+    DashboardsModule,
   ],
   controllers: [HealthController],
 })
