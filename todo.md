@@ -112,8 +112,8 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
   ```
 - [ ] Author all five ADR stubs (one paragraph each is fine; expand as decisions land)
 - [ ] Add `.env.example` listing every var consumed across services
-- [ ] Add `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, drop-in)
-- [ ] Add `SECURITY.md` describing API key handling, rate limits, multi-tenant isolation, and how to report vulnerabilities
+- [x] Add `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, drop-in)
+- [x] Add `SECURITY.md` describing API key handling, rate limits, multi-tenant isolation, and how to report vulnerabilities
 
 ---
 

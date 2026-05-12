@@ -1,0 +1,26 @@
+name: forecast-retrain
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    name: Trigger nightly retrain
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /retrain
+        env:
+          FORECAST_URL: ${{ secrets.FORECAST_URL }}
+          RETRAIN_SHARED_SECRET: ${{ secrets.RETRAIN_SHARED_SECRET }}
+        run: |
+          if [ -z "$FORECAST_URL" ] || [ -z "$RETRAIN_SHARED_SECRET" ]; then
+            echo "::warning::FORECAST_URL or RETRAIN_SHARED_SECRET not configured — skipping"
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Retrain-Secret: ${RETRAIN_SHARED_SECRET}" \
+            "${FORECAST_URL}/retrain" \
+            --max-time 1800
