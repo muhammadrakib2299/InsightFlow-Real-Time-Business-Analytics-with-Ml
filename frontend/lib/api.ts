@@ -19,15 +19,23 @@ export class ApiError extends Error {
 
 export async function apiFetch<T>(
   path: string,
-  init: RequestInit & { token?: string } = {},
+  init: RequestInit & { token?: string | null } = {},
 ): Promise<T> {
   const { token, headers, ...rest } = init;
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+
+  // If the caller did not pass token: false-y, fall back to the stored
+  // access token. Pass `token: null` explicitly to opt out (e.g. login).
+  let effectiveToken: string | null | undefined = token;
+  if (effectiveToken === undefined && typeof window !== 'undefined') {
+    effectiveToken = window.localStorage.getItem('if.access');
+  }
+
   const res = await fetch(url, {
     ...rest,
     headers: {
       'content-type': 'application/json',
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(effectiveToken ? { authorization: `Bearer ${effectiveToken}` } : {}),
       ...headers,
     },
     credentials: 'include',
