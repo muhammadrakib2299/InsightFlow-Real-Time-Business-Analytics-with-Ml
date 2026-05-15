@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Providers } from './providers';
+import { themeBootScript } from '@/lib/theme';
 
 export const metadata: Metadata = {
   title: 'InsightFlow — Real-time analytics with ML forecasting',
@@ -14,7 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="min-h-screen bg-bg text-fg antialiased">
         <Providers>{children}</Providers>
       </body>
