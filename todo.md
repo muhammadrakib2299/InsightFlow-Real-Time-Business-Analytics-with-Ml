@@ -290,6 +290,63 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 ---
 
+## Post-v0.1 — cold-boot fixes (2026-05-15)
+
+First fresh-laptop boot exposed drift between pinned majors and current
+type / runtime expectations. All fixed in-session; see `docs/lessons.md`
+for the *why*.
+
+- [x] `api`: TS errors after Puppeteer v23 / `@types/node` v22 / Prisma 5
+  type tightening — `as unknown as` bridges for `Prisma.InputJsonValue`,
+  `Buffer.from(pdf)` after `page.pdf()`, `BodyInit` cast for the S3 PUT
+- [x] `api`: PDF DI silently mis-wired — `PDF_QUEUE` lifted into
+  `pdf.constants.ts` so decorators don't see `undefined` at import time
+- [x] `ingestion`: aiokafka 0.11 uses `cramjam` for zstd, not
+  `zstandard` — swapped requirements and standardised on cramjam 2.8.4
+- [x] `ingestion`: added `procps` so the consumer's `pgrep` healthcheck
+  resolves inside `python:3.11-slim`
+- [x] `frontend`: added empty `public/` directory (Dockerfile `COPY`
+  was failing because Next.js had no static assets)
+- [x] `frontend`: `ENV HOSTNAME=0.0.0.0` in the runtime image — Next.js
+  standalone otherwise only binds the container's external interface and
+  the in-container wget healthcheck fails
+- [x] `infra/docker-compose.yml`: swapped `wget` → `curl` for the Python
+  service healthchecks (slim image has curl, not wget)
+- [x] `infra/caddy/Caddyfile`: `admin :2019` in the global block — the
+  default `localhost:2019` was not reliably reachable from BusyBox wget
+
+## Post-v0.1 — UI polish (2026-05-15)
+
+- [x] Public surface upgrade: gradient hero, inline product preview SVG
+  (sparkline + forecast band), feature grid with inline-SVG icons, stack
+  chips, CTA, footer
+- [x] Auth pages: branded split-screen layout, larger headings, show/hide
+  password toggle, spinner-in-button, themed error blocks
+- [x] Signup: 4-segment password strength meter (Weak → Strong)
+- [x] Design tokens: added `surface`, `border`, `accent-2`, `ring`;
+  reusable component classes (`.btn-primary`, `.input`, `.card`, `.chip`);
+  `.bg-grid`, `.bg-hero-glow`, `.text-gradient` utilities
+- [x] Dark mode as default (analytics convention); existing tokens
+  preserved so internal dashboard pages don't break
+
+## v0.2 carry-overs (open)
+
+- [ ] Move the `withWorkspace()` + BFF metrics allowlist + forecast
+  metrics map behind a single codegen step (today there are three copies
+  in sync via tests)
+- [ ] Public widget rendering on the share page — needs a per-token JWT
+  minted on share-link verification so live data can be fetched without
+  the access token
+- [ ] Cohort + funnel BFF endpoints need to honour the global filter panel
+  (geo / device / plan / segment); plumbing is mechanical but not done
+- [ ] Slim down the `forecast` image: lazy-import statsmodels / pmdarima
+  and switch to a scipy/numpy-slim base. Cold-build is currently ~5 min
+- [ ] Cookie-based auth — replace localStorage token storage with
+  HttpOnly cookies set via a Next.js route handler
+- [ ] CI green-build cron — schedule a weekly build of the unmodified
+  branch so library type drift fails loudly instead of accumulating until
+  the next operator boot
+
 ## Out of scope (parking lot for v2)
 
 - SQL editor / ad-hoc query UI

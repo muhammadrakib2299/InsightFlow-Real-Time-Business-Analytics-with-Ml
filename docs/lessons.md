@@ -22,6 +22,54 @@ What surprised me during the build, and what I'd do differently next time.
 
 ## Things that surprised me
 
+- **Library type drift quietly breaks the build months later.** Six months
+  after the api/ image last compiled cleanly, a fresh `docker compose up`
+  failed at `npm run build` with four TS errors. Puppeteer v23 now returns
+  `Uint8Array` from `page.pdf()` instead of `Buffer`; `@types/node` v22
+  made `Buffer` a generic that no longer satisfies `BodyInit` directly;
+  Prisma's `InputJsonValue` tightened so `AlertChannelDto[]` needs an
+  `as unknown as` bridge. None of these are real bugs — they're upstream
+  type-tightening that compounds across pinned-major-version installs.
+  Lesson: pin minor versions too, or run a weekly green-build CI even on
+  branches you aren't actively touching.
+- **Module-level `export const` ordering can silently mis-wire NestJS DI.**
+  `PdfModule` defined `export const PDF_QUEUE = 'pdf-render'` *below* the
+  imports of `PdfService` and `PdfRenderProcessor`. Decorators evaluate at
+  import time, so `@InjectQueue(PDF_QUEUE)` and `@Processor(PDF_QUEUE)`
+  ran with `undefined`, which `@nestjs/bullmq` cheerfully aliases to
+  `'default'`. Then `BullModule.registerQueue({ name: PDF_QUEUE })`
+  evaluated last and registered the queue under `'pdf-render'`. Result:
+  `Nest can't resolve dependencies of the PdfService (?, ...) — BullQueue_default`.
+  Fix: put shared module constants in their own file (`pdf.constants.ts`)
+  so import-time evaluation is total.
+- **aiokafka 0.11 swapped compression backends from per-codec libs to
+  cramjam.** Producing with `compression_type="zstd"` raised
+  `RuntimeError: Compression library for zstd not found` even with
+  `zstandard==0.23.0` installed. `aiokafka.codec.has_zstd()` now returns
+  `cramjam is not None`. The pinned aiokafka was 0.11.0, the unpinned
+  `zstandard` transitive was a moot dependency. Lesson: when a Python
+  library claims an optional codec, audit which package its current
+  detector actually imports.
+- **Healthcheck commands must exist in the image they run inside.** The
+  compose file shipped `wget`-based healthchecks for every service, but
+  the python:3.11-slim base only installs `curl`. Forecast and ingestion
+  reported "unhealthy" forever — not because they were broken, but
+  because the test command was `not found`. The consumer's
+  `pgrep -f` healthcheck had the same problem (slim doesn't include
+  `procps`). Either standardise on `curl` for HTTP probes and install
+  `procps` in slim images, or pick `alpine` everywhere — but don't mix.
+- **Next.js standalone in Docker binds only to the container's external
+  interface.** With default `HOSTNAME`, the standalone server logs
+  `Network: http://172.x.x.x:3000` but `127.0.0.1:3000` inside the
+  container is connection-refused. A wget healthcheck pointed at
+  localhost will always fail. Set `ENV HOSTNAME=0.0.0.0` in the runtime
+  stage so loopback is bound too.
+- **Caddy's default admin endpoint is `localhost:2019`, and inside Alpine
+  + BusyBox wget that doesn't always resolve to where Caddy listens.**
+  The healthcheck got "Connection refused" even though Caddy logged
+  `admin endpoint started`. Pinning `admin :2019` in the global block
+  binds it on all interfaces (still safe: port not published to host)
+  and makes the healthcheck deterministic.
 - **Prophet's cmdstan compile.** First-build time on the forecast image
   is brutal (~5 minutes on a CX22). Worth caching aggressively in CI and
   worth documenting in the deploy runbook so a fresh operator doesn't
@@ -87,3 +135,13 @@ What surprised me during the build, and what I'd do differently next time.
   ClickHouse insert.** If you ever change the consumer to batch larger,
   remember the consequence: a crash mid-batch will redeliver the entire
   batch — idempotency via ReplacingMergeTree is what makes that safe.
+- **`PDF_QUEUE` lives in `api/src/pdf/pdf.constants.ts` for a reason.**
+  Do not move it back into `pdf.module.ts` even though the module is
+  "where queues are registered" — see the import-time evaluation lesson
+  above. Re-inlining the constant will silently mis-wire BullMQ injection
+  again, and the failure mode is "service won't start in production"
+  rather than a compile error.
+- **Frontend `public/` must exist on disk even if empty.** The Dockerfile
+  does `COPY --from=build /app/public ./public` unconditionally; without
+  a placeholder (`.gitkeep`) the build fails at "not found." Don't be
+  tempted to delete `frontend/public/` if it looks empty.
