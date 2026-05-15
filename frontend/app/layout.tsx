@@ -3,8 +3,9 @@ import type { Metadata } from 'next';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'InsightFlow',
-  description: 'Real-time business analytics with ML forecasting',
+  title: 'InsightFlow — Real-time analytics with ML forecasting',
+  description:
+    'Open-source, self-hostable BI platform. Ingest events, forecast revenue and churn, detect anomalies, and export branded PDF reports.',
 };
 
 export default function RootLayout({
@@ -13,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-bg text-fg antialiased">
         <Providers>{children}</Providers>
       </body>
