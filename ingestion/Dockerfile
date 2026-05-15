@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl ca-certificates tini \
+        curl ca-certificates tini procps \
     && rm -rf /var/lib/apt/lists/*
 
 # -------- deps --------

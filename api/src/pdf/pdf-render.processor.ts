@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { PdfJobStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 import { TokenService } from '../auth/token.service';
-import { PDF_QUEUE } from './pdf.module';
+import { PDF_QUEUE } from './pdf.constants';
 import { S3Service } from './s3.service';
 
 interface RenderJobData {
@@ -115,7 +115,7 @@ export class PdfRenderProcessor extends WorkerHost {
         printBackground: true,
         margin: { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' },
       });
-      return pdf;
+      return Buffer.from(pdf);
     } finally {
       await browser.close();
     }

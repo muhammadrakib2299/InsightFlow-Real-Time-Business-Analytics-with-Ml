@@ -33,7 +33,7 @@ export class AlertsService {
         metric: dto.metric,
         method: dto.method as AlertMethod,
         thresholdParams: dto.thresholdParams as Prisma.InputJsonValue,
-        channelsJson: dto.channels as Prisma.InputJsonValue,
+        channelsJson: dto.channels as unknown as Prisma.InputJsonValue,
         cooldownSeconds: dto.cooldownSeconds ?? 3600,
         enabled: dto.enabled ?? true,
       },
@@ -48,7 +48,7 @@ export class AlertsService {
       data.thresholdParams = dto.thresholdParams as Prisma.InputJsonValue;
     }
     if (dto.channels !== undefined) {
-      data.channelsJson = dto.channels as Prisma.InputJsonValue;
+      data.channelsJson = dto.channels as unknown as Prisma.InputJsonValue;
     }
     if (dto.cooldownSeconds !== undefined) data.cooldownSeconds = dto.cooldownSeconds;
     if (dto.enabled !== undefined) data.enabled = dto.enabled;

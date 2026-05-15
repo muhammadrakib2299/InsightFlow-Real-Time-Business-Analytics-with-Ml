@@ -32,7 +32,7 @@ export class S3Service {
     const res = await fetch(url, {
       method: 'PUT',
       headers: { ...headers, 'content-type': contentType },
-      body,
+      body: body as unknown as BodyInit,
     });
     if (!res.ok) {
       throw new Error(`s3 upload failed: ${res.status} ${await res.text().catch(() => '')}`);

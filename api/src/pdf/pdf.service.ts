@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PdfJobStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
-import { PDF_QUEUE } from './pdf.module';
+import { PDF_QUEUE } from './pdf.constants';
 import { S3Service } from './s3.service';
 
 @Injectable()

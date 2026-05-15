@@ -7,8 +7,9 @@ import { PdfController } from './pdf.controller';
 import { PdfService } from './pdf.service';
 import { PdfRenderProcessor } from './pdf-render.processor';
 import { S3Service } from './s3.service';
+import { PDF_QUEUE } from './pdf.constants';
 
-export const PDF_QUEUE = 'pdf-render';
+export { PDF_QUEUE };
 
 @Module({
   imports: [

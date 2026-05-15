@@ -3,6 +3,7 @@ uvicorn[standard]==0.30.6
 pydantic==2.9.2
 pydantic-settings==2.5.2
 aiokafka==0.11.0
+cramjam==2.8.4
 aiohttp==3.10.5
 asyncpg==0.29.0
 redis[hiredis]==5.1.1
