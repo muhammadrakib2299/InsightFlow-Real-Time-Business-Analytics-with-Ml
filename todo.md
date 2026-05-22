@@ -315,6 +315,47 @@ for the *why*.
 - [x] `infra/caddy/Caddyfile`: `admin :2019` in the global block — the
   default `localhost:2019` was not reliably reachable from BusyBox wget
 
+## Post-v0.1 — cold-boot fixes (2026-05-22)
+
+Second fresh-boot pass after seeding demo data exposed more drift between
+Prisma-shaped `.env` and Python consumers, and between Prophet 1.1.5 and
+its runtime expectations.
+
+- [x] `ingestion/app/settings.py`: strip `?schema=public` from
+  `DATABASE_URL` before handing to asyncpg. Prisma silently consumes the
+  query param; asyncpg forwards it to Postgres as a startup parameter and
+  the server raises `UndefinedObjectError: unrecognized configuration
+  parameter "schema"`. Keep one DSN, normalise per-consumer.
+- [x] `forecast/Dockerfile`: actually compile cmdstan in the image. The
+  comment claimed it was done at build time but only `pip install` ran —
+  Prophet then failed at fit with a misleading `'Prophet' object has no
+  attribute 'stan_backend'` because the cmdstan backend init raises and
+  leaves the attribute unset. Added a `python -c "import cmdstanpy;
+  cmdstanpy.install_cmdstan()"` step in the deps stage (~5 min one-off).
+- [x] `forecast/requirements.txt`: `statsmodels==0.14.2 → 0.14.4`. scipy
+  1.13+ removed the private `_lazywhere` import that 0.14.2 still used;
+  the runtime symptom was `cannot import name '_lazywhere' from
+  scipy._lib._util` at ARIMA fit time. 0.14.4 dropped the private import.
+
+## Post-v0.1 — UI polish (2026-05-22)
+
+- [x] `/dashboards/[id]` redesign: sticky 260px sidebar (Add-widget panel
+  with KPI / Forecast / Cohort / Funnel type tabs, FilterPanel,
+  At-a-glance widget counts) + main canvas with widgets grouped under
+  named sections (Key metrics / Forecasts / Cohorts &amp; funnels / Other).
+  Breadcrumb header with widget-count chip.
+- [x] `AppShell`: container widened `max-w-6xl → max-w-7xl`, header
+  bumped `h-14 → h-16`, divider between brand and nav, workspace chip
+  rendered as a rounded-full pill with name in foreground colour.
+- [x] `KpiTile`: switched to the shared `.card` token, bold tabular
+  numerals (text-3xl), skeleton block while loading, "cached" badge.
+- [x] `/dashboards` list: wider `max-w-5xl` container with 3-col grid on
+  `lg`, bigger header with "Workspace" eyebrow, line-clamp on names and
+  descriptions, italic "No description" fallback, border-t metadata row.
+- [x] `FilterPanel`: aligned token usage with the rest of the app
+  (`bg-surface/50 border-border`), removed the orphan `mt-6` that the
+  old single-column layout required.
+
 ## Post-v0.1 — UI polish (2026-05-15)
 
 - [x] Public surface upgrade: gradient hero, inline product preview SVG

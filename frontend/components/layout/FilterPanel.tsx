@@ -26,7 +26,7 @@ export function FilterPanel({ value, onChange }: FilterPanelProps) {
   const setField = (k: keyof DashboardFilters, v: string) => onChange({ ...value, [k]: v });
 
   return (
-    <section className="mt-6 rounded-md border border-bg-subtle/80 bg-bg-subtle/30 p-3">
+    <section className="rounded-md border border-border bg-surface/50 p-3">
       <header className="flex items-center justify-between text-xs">
         <span className="text-fg-muted">Filters</span>
         <button

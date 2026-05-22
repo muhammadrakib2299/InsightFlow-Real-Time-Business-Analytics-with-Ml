@@ -18,6 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 FROM base AS deps
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
+# Prophet needs cmdstan compiled into the image — without it, Prophet().fit()
+# fails late with a misleading `stan_backend` AttributeError. Compile once at
+# image build time (~5 min on first build, cached after).
+RUN python -c "import cmdstanpy; cmdstanpy.install_cmdstan()"
 
 # -------- dev (used by docker-compose.dev.yml) --------
 FROM deps AS dev

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import urlsplit, urlunsplit
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,16 @@ class Settings(BaseSettings):
         default="postgresql://insightflow:change_me@postgres:5432/insightflow",
         alias="DATABASE_URL",
     )
+
+    @field_validator("postgres_dsn")
+    @classmethod
+    def _strip_prisma_query_params(cls, v: str) -> str:
+        # DATABASE_URL is shared with Prisma, which appends `?schema=public`.
+        # asyncpg forwards unknown params to Postgres → UndefinedObjectError.
+        parts = urlsplit(v)
+        if parts.query:
+            return urlunsplit((parts.scheme, parts.netloc, parts.path, "", parts.fragment))
+        return v
 
     # Rate limit
     rate_limit_rps: int = Field(default=1000, alias="INGESTION_RATE_LIMIT_RPS")

@@ -4,7 +4,7 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 prophet==1.1.5
 pmdarima==2.0.4
-statsmodels==0.14.2
+statsmodels==0.14.4
 pandas==2.2.3
 numpy==1.26.4
 scikit-learn==1.5.2

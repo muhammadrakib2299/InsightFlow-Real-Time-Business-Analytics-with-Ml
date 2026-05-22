@@ -29,15 +29,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-20 border-b border-border bg-bg/80 backdrop-blur supports-[backdrop-filter]:bg-bg/60">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
-          <Link href="/dashboards" className="flex items-center gap-2">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-6">
+          <Link href="/dashboards" className="flex items-center gap-2.5">
             <span
-              className="inline-block h-5 w-5 rounded bg-gradient-to-br from-accent to-accent-2 shadow-glow"
+              className="inline-block h-6 w-6 rounded-md bg-gradient-to-br from-accent to-accent-2 shadow-glow"
               aria-hidden="true"
             />
             <span className="text-base font-semibold tracking-tight">InsightFlow</span>
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
+          <span className="hidden h-5 w-px bg-border md:inline-block" aria-hidden="true" />
+          <nav className="hidden items-center gap-0.5 md:flex">
             {NAV.map((item) => {
               const active = pathname === item.href || pathname?.startsWith(item.href + '/');
               return (
@@ -58,20 +59,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             {workspace && (
               <span
-                className="hidden items-center gap-2 rounded-md border border-border bg-surface/60 px-2.5 py-1 text-xs text-fg-muted sm:inline-flex"
+                className="hidden items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-xs font-medium text-fg-muted sm:inline-flex"
                 title={`Workspace: ${workspace.name}`}
               >
                 <span
                   className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 pulse-dot"
                   aria-hidden="true"
                 />
-                {workspace.name}
+                <span className="max-w-[160px] truncate text-fg">{workspace.name}</span>
               </span>
             )}
             <ThemeToggle />
             <button
               onClick={onLogout}
-              className="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-fg-muted transition hover:text-fg hover:bg-surface/60"
+              className="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-fg-muted transition hover:bg-surface/60 hover:text-fg"
             >
               Sign out
             </button>
@@ -94,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">{children}</main>
     </div>
   );
 }

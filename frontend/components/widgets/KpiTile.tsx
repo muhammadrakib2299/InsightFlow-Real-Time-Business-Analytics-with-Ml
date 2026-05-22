@@ -71,23 +71,41 @@ export function KpiTile({ metric, title, windowDays = 30 }: KpiTileProps) {
     };
   }, []);
 
+  const value = query.isLoading
+    ? null
+    : query.isError
+      ? 'error'
+      : formatValue(query.data);
+
   return (
-    <article className="flex h-full flex-col justify-between rounded-lg border border-bg-subtle/80 bg-bg-subtle/40 p-4">
-      <header className="flex items-center justify-between text-sm text-fg-muted">
-        <h3>{title}</h3>
+    <article className="card group relative flex h-full flex-col gap-4 p-5 transition hover:border-accent/40">
+      <header className="flex items-start justify-between gap-2">
+        <h3 className="label">{title}</h3>
         <span
           aria-label={pulse ? 'live update' : 'idle'}
-          className={`h-2 w-2 rounded-full transition-colors ${
-            pulse ? 'bg-emerald-400' : 'bg-fg-muted/40'
+          className={`mt-0.5 h-1.5 w-1.5 rounded-full transition-colors ${
+            pulse ? 'bg-emerald-400 pulse-dot' : 'bg-fg-muted/40'
           }`}
         />
       </header>
-      <div className="mt-3 text-3xl font-semibold tracking-tight">
-        {query.isLoading ? '…' : query.isError ? '!' : formatValue(query.data)}
+      <div className="flex items-baseline gap-2">
+        {value === null ? (
+          <div className="h-9 w-28 animate-pulse rounded-md bg-fg-muted/10" />
+        ) : value === 'error' ? (
+          <span className="text-2xl font-semibold text-red-400">—</span>
+        ) : (
+          <span className="text-3xl font-bold tracking-tight tabular-nums text-fg">
+            {value}
+          </span>
+        )}
       </div>
-      <footer className="mt-2 text-xs text-fg-muted">
-        last {windowDays} days
-        {query.data?.cache.hit ? ' · cached' : ''}
+      <footer className="flex items-center justify-between text-[11px] uppercase tracking-wider text-fg-muted">
+        <span>Last {windowDays} days</span>
+        {query.data?.cache.hit && (
+          <span className="rounded-full bg-fg-muted/10 px-2 py-0.5 normal-case tracking-normal">
+            cached
+          </span>
+        )}
       </footer>
     </article>
   );

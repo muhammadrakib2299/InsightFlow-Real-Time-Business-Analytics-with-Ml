@@ -35,20 +35,23 @@ export default function DashboardsListPage() {
   }, [creating]);
 
   return (
-    <section className="mx-auto max-w-4xl">
+    <section className="mx-auto max-w-5xl">
       <GettingStartedCard onCreateDashboard={() => setCreating(true)} />
 
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboards</h1>
-          <p className="mt-1 text-sm text-fg-muted">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-fg-muted">
+            Workspace
+          </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">Dashboards</h1>
+          <p className="mt-2 max-w-xl text-sm text-fg-muted">
             Saved views for your workspace. Each dashboard is a canvas — add KPI
             tiles, charts, funnels, and forecasts.
           </p>
         </div>
         <button
           onClick={() => setCreating((v) => !v)}
-          className="btn-primary h-9 px-3 text-sm self-start"
+          className="btn-primary self-start"
         >
           {creating ? 'Cancel' : '+ New dashboard'}
         </button>
@@ -121,32 +124,42 @@ export default function DashboardsListPage() {
           <EmptyState onCreate={() => setCreating(true)} />
         )}
         {list.data && list.data.length > 0 && (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {list.data.map((d) => (
-              <li key={d.id}>
-                <Link
-                  href={`/dashboards/${d.id}`}
-                  className="card group flex h-full flex-col gap-2 p-4 transition hover:border-accent/60 hover:shadow-glow"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium text-fg">{d.name}</span>
-                    <span className="chip text-[10px]">
-                      {(d.layoutJson?.length ?? 0)} widget
-                      {(d.layoutJson?.length ?? 0) === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  {d.description && (
-                    <p className="line-clamp-2 text-xs text-fg-muted">{d.description}</p>
-                  )}
-                  <div className="mt-auto flex items-center justify-between pt-2 text-[11px] text-fg-muted">
-                    <span>Updated {new Date(d.updatedAt).toLocaleDateString()}</span>
-                    <span className="text-accent opacity-0 transition group-hover:opacity-100">
-                      Open →
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            ))}
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {list.data.map((d) => {
+              const widgetCount = d.layoutJson?.length ?? 0;
+              return (
+                <li key={d.id}>
+                  <Link
+                    href={`/dashboards/${d.id}`}
+                    className="card group flex h-full flex-col gap-3 p-5 transition hover:border-accent/60 hover:shadow-glow"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="line-clamp-1 font-semibold tracking-tight text-fg">
+                        {d.name}
+                      </span>
+                      <span className="chip text-[10px]">
+                        <span className="tabular-nums text-fg">{widgetCount}</span>
+                      </span>
+                    </div>
+                    {d.description ? (
+                      <p className="line-clamp-2 text-xs text-fg-muted">
+                        {d.description}
+                      </p>
+                    ) : (
+                      <p className="text-xs italic text-fg-muted/60">No description</p>
+                    )}
+                    <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-3 text-[11px] text-fg-muted">
+                      <span className="tabular-nums">
+                        {new Date(d.updatedAt).toLocaleDateString()}
+                      </span>
+                      <span className="font-medium text-accent opacity-0 transition group-hover:opacity-100">
+                        Open →
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

@@ -22,6 +22,48 @@ What surprised me during the build, and what I'd do differently next time.
 
 ## Things that surprised me
 
+- **A shared `DATABASE_URL` is a contract between every consumer, not
+  just Prisma.** Prisma appends `?schema=public` to the DSN and silently
+  swallows the query param on its end. asyncpg (in the Python ingestion
+  service) does the opposite: it forwards unknown query params to the
+  Postgres server as startup parameters, so the connection blew up with
+  `UndefinedObjectError: unrecognized configuration parameter "schema"`.
+  Symptom on the wire was a 500 from `/v1/events` and a `0` row count
+  in ClickHouse — neither pointed at Postgres. Lesson: when an env var
+  is shared across language ecosystems, the first non-Prisma consumer
+  should normalise the DSN at the boundary, not assume the file is in
+  its dialect. Pinning the env var per-service would also work but
+  diverges the source of truth.
+- **Prophet's `'Prophet' object has no attribute 'stan_backend'` almost
+  never means what it says.** Prophet's `__init__` assigns
+  `self.stan_backend = StanBackendEnum.get_backend_class(...)`, and if
+  cmdstan isn't installed, `get_backend_class` raises *before* the
+  assignment lands. The exception is caught and re-raised later at fit
+  time as the misleading AttributeError. In our case the Dockerfile
+  comment claimed cmdstan was compiled at build but only `pip install`
+  ran — cmdstanpy ships without cmdstan and won't fetch it lazily in a
+  prod-shaped runtime. Lesson: when Prophet errors mention a missing
+  attribute on the Prophet instance, suspect cmdstan first; install it
+  explicitly in the deps stage and pay the ~5-minute compile once at
+  build rather than discovering it at first fit.
+- **scipy private API removals cascade through statsmodels and
+  pmdarima.** scipy 1.13 removed `scipy._lib._util._lazywhere`, which
+  statsmodels 0.14.2 still imported. The transitive resolver pulled
+  scipy 1.17 alongside statsmodels 0.14.2, and ARIMA fit raised
+  `cannot import name '_lazywhere'`. Same pattern as the aiokafka /
+  cramjam lesson: when a Python library reaches into a sibling's
+  private module, every minor bump of the sibling is a potential
+  break. Either pin both, or stay on the library version that switched
+  to the public API (statsmodels 0.14.4+).
+- **`docker compose ps` becomes a slow probe when buildkit is
+  compiling under heavy IO.** During the cmdstan compile inside the
+  forecast image, every `docker ps` / `compose ps` call timed out at
+  15s+. The buildkit container holds enough disk and CPU that the
+  daemon's response loop on the host gets backed up. Lesson: when a
+  long-running compose `--build --wait` is in flight, don't poll the
+  daemon — wait for the task notification. Each probe adds load and
+  produces no new information.
+
 - **Library type drift quietly breaks the build months later.** Six months
   after the api/ image last compiled cleanly, a fresh `docker compose up`
   failed at `npm run build` with four TS errors. Puppeteer v23 now returns
