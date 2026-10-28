@@ -35,6 +35,9 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 RUN apk add --no-cache openssl wget tini && \
     addgroup -S app && adduser -S app -G app
+# The Prisma CLI is a dev dependency, so the prune above removes it. Install
+# it here so the container can apply migrations before the API starts.
+RUN npm install -g prisma@5.22.0
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
@@ -43,4 +46,4 @@ COPY package.json ./
 USER app
 EXPOSE 4000
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "prisma migrate deploy && exec node dist/main.js"]
