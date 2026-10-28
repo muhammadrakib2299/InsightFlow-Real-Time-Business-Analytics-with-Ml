@@ -26,6 +26,8 @@ jobs:
         run: |
           mkdir -p "$OUT"
           cp .env.example .env
+          docker pull -q chainguard/minio:latest
+          docker image inspect chainguard/minio:latest --format "minio image: entrypoint={{json .Config.Entrypoint}} user={{.Config.User}}"
           docker compose -f infra/docker-compose.yml up -d --wait --wait-timeout 1500
 
       - name: Seed demo data and build a dashboard
@@ -57,6 +59,7 @@ jobs:
           add '{"type":"funnel","title":"Signup → payment funnel","config":{"steps":["signup","subscription_started","subscription_payment"],"windowDays":30,"windowHours":168}}'
           add '{"type":"cohort","title":"Cohort retention","config":{"windowDays":84}}'
           echo "DASH=$DASH" >> "$GITHUB_ENV"
+          docker stats --no-stream --format "{{.Name}}	{{.MemUsage}}" | tee "$OUT/memory.txt"
 
       - name: Record the walkthrough
         run: |
