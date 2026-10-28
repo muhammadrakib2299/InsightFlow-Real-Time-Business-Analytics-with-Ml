@@ -42,7 +42,7 @@ jobs:
           KEY=$(curl -fsS -X POST "$API/workspaces/$WS/api-keys" -H "$AUTH" -H 'content-type: application/json' \
             -d '{"name":"seed"}' | jq -r '.secret')
           pip install -q -r scripts/requirements.txt
-          python3 scripts/seed_demo.py --endpoint http://localhost:5000 --api-key "$KEY" --days 90 --sleep-ms 10
+          python3 scripts/seed_demo.py --endpoint http://localhost:5000 --api-key "$KEY" --days 90 --sleep-ms 250
           sleep 45
           curl -fsS -X POST http://localhost:8000/retrain \
             -H "X-Retrain-Secret: $(grep RETRAIN_SHARED_SECRET .env | cut -d= -f2)" \
