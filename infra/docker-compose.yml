@@ -102,7 +102,12 @@ services:
 
   minio:
     <<: *svc-defaults
+    # minio/minio is no longer published on Docker Hub. Chainguard publishes
+    # free builds of the same server (latest tag only). The image has no shell
+    # or curl, so there is no healthcheck; nothing waits on minio being healthy.
     image: chainguard/minio:latest
+    # The image defaults to UID 65532. Run as root, like the old minio/minio
+    # image, so the server can write to the minio-data volume.
     user: "0:0"
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
@@ -110,8 +115,6 @@ services:
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
     volumes:
       - minio-data:/data
-    healthcheck:
-      disable: true
 
   # --------------------------------------------------------------------------
   # Application services
