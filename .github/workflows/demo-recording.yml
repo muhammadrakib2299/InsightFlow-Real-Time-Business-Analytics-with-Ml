@@ -1,0 +1,87 @@
+# Temporary: boots the full stack on a GitHub runner, seeds 90 days of demo
+# data, builds a dashboard and records a walkthrough for the README GIF.
+# Lives only on the demo-recording branch.
+name: Record demo
+
+on:
+  push:
+    branches: [demo-recording]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      DEMO_EMAIL: demo@insightflow.dev
+      DEMO_PASSWORD: demo-password-1234
+      OUT: ${{ github.workspace }}/out
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Boot the stack
+        run: |
+          mkdir -p "$OUT"
+          cp .env.example .env
+          docker compose -f infra/docker-compose.yml up -d --wait --wait-timeout 1500
+
+      - name: Seed demo data and build a dashboard
+        run: |
+          set -euo pipefail
+          API=http://localhost:4000/api
+          SIGNUP=$(curl -fsS "$API/auth/signup" -H 'content-type: application/json' \
+            -d "$(jq -nc --arg e "$DEMO_EMAIL" --arg p "$DEMO_PASSWORD" '{email:$e, password:$p, workspaceName:"Acme SaaS"}')")
+          TOKEN=$(jq -r '.tokens.accessToken' <<<"$SIGNUP")
+          WS=$(jq -r '.workspace.id' <<<"$SIGNUP")
+          AUTH="authorization: Bearer $TOKEN"
+          KEY=$(curl -fsS -X POST "$API/workspaces/$WS/api-keys" -H "$AUTH" -H 'content-type: application/json' \
+            -d '{"name":"seed"}' | jq -r '[.. | strings | select(startswith("ifk_"))][0]')
+          pip install -q -r scripts/requirements.txt
+          python3 scripts/seed_demo.py --endpoint http://localhost:5000 --api-key "$KEY" --days 90 --sleep-ms 10
+          sleep 45
+          curl -fsS -X POST http://localhost:8000/retrain \
+            -H "X-Retrain-Secret: $(grep RETRAIN_SHARED_SECRET .env | cut -d= -f2)" \
+            -H 'content-type: application/json' -d '{}'
+          sleep 60
+          DASH=$(curl -fsS -X POST "$API/workspaces/$WS/dashboards" -H "$AUTH" -H 'content-type: application/json' \
+            -d '{"name":"SaaS overview","description":"90 days of synthetic demo data"}' | jq -r '.id')
+          add() { curl -fsS -X POST "$API/workspaces/$WS/dashboards/$DASH/widgets" -H "$AUTH" -H 'content-type: application/json' -d "$1" >/dev/null; }
+          add '{"type":"kpi","title":"MRR","config":{"metric":"mrr"}}'
+          add '{"type":"kpi","title":"Daily active users","config":{"metric":"dau"}}'
+          add '{"type":"kpi","title":"Signups","config":{"metric":"signups"}}'
+          add '{"type":"kpi","title":"Churn","config":{"metric":"churn"}}'
+          add '{"type":"forecast","title":"MRR forecast","config":{"metric":"mrr","horizonDays":30,"modelKind":"prophet"}}'
+          add '{"type":"funnel","title":"Signup → payment funnel","config":{"steps":["signup","subscription_started","subscription_payment"],"windowDays":30,"windowHours":168}}'
+          add '{"type":"cohort","title":"Cohort retention","config":{"windowDays":84}}'
+          echo "DASH=$DASH" >> "$GITHUB_ENV"
+
+      - name: Record the walkthrough
+        run: |
+          mkdir -p /tmp/rec && cp scripts/record_demo.mjs /tmp/rec/ && cd /tmp/rec
+          npm init -y >/dev/null && npm i -s playwright@1
+          npx playwright install --with-deps chromium
+          node record_demo.mjs
+
+      - name: Encode GIF and MP4
+        run: |
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          VID=$(ls "$OUT"/video/*.webm | head -1)
+          ffmpeg -y -loglevel error -ss 1.2 -i "$VID" -vf "fps=10,scale=1000:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle" -loop 0 "$OUT/insightflow-demo.gif"
+          ffmpeg -y -loglevel error -ss 1.2 -i "$VID" -c:v libx264 -pix_fmt yuv420p -crf 22 -movflags +faststart "$OUT/insightflow-demo.mp4"
+          ls -la "$OUT"
+
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p "$OUT"
+          docker compose -f infra/docker-compose.yml ps -a > "$OUT/compose-ps.txt" 2>&1 || true
+          docker compose -f infra/docker-compose.yml logs --no-color --tail 300 > "$OUT/compose-logs.txt" 2>&1 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: insightflow-demo
+          path: out/
