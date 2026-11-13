@@ -131,6 +131,9 @@ export class InsightFlowClient {
     let attempt = 0;
     let lastErr: unknown;
     while (attempt <= this.maxRetries) {
+      // A 4xx other than 429 will fail the same way every time, so it must
+      // escape the retry loop rather than be caught and retried below.
+      let retryable = true;
       try {
         const res = await this.fetchImpl(`${this.endpoint}/v1/events`, {
           method: 'POST',
@@ -144,11 +147,13 @@ export class InsightFlowClient {
           throw new Error(`insightflow: server returned ${res.status}`);
         }
         if (!res.ok) {
+          retryable = false;
           const text = await res.text().catch(() => '');
           throw new Error(`insightflow: ${res.status} ${text}`);
         }
         return (await res.json()) as IngestAck;
       } catch (err) {
+        if (!retryable) throw err;
         lastErr = err;
         attempt += 1;
         if (attempt > this.maxRetries) break;
