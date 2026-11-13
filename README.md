@@ -2,7 +2,7 @@
 
 > Open-source, self-hostable BI platform. Ingest sales and product events in real time, forecast revenue / churn / demand with Prophet and ARIMA, get Z-score anomaly alerts, drill into cohorts and funnels, and export branded PDF reports — all on a single `docker compose up`.
 
-[![CI](https://img.shields.io/badge/CI-pending-lightgrey.svg)](#)
+[![CI](https://github.com/muhammadrakib2299/InsightFlow-Real-Time-Business-Analytics-with-Ml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/muhammadrakib2299/InsightFlow-Real-Time-Business-Analytics-with-Ml/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
