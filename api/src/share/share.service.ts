@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -23,7 +22,7 @@ function b64url(buf: Buffer): string {
 }
 
 function b64urlDecode(s: string): Buffer {
-  let pad = s.length % 4;
+  const pad = s.length % 4;
   if (pad === 2) s += '==';
   else if (pad === 3) s += '=';
   else if (pad !== 0) throw new Error('bad b64url length');

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 
 /**
  * Minimal S3-compatible client. We talk to MinIO in dev and any
@@ -144,7 +144,7 @@ export class S3Service {
 }
 
 function sha256Hex(input: string): string {
-  return require('node:crypto').createHash('sha256').update(input).digest('hex');
+  return createHash('sha256').update(input).digest('hex');
 }
 
 function hmacBuf(key: string | Buffer, data: string): Buffer {
