@@ -5,6 +5,9 @@ pydantic-settings==2.5.2
 prophet==1.1.5
 pmdarima==2.0.4
 statsmodels==0.14.4
+# statsmodels 0.14.4 imports scipy._lib._util._lazywhere, which SciPy 1.16
+# removed. Unpinned, pip resolved a SciPy that breaks the ARIMA import.
+scipy==1.15.3
 pandas==2.2.3
 numpy==1.26.4
 scikit-learn==1.5.2
