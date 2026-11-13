@@ -21,6 +21,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      # `npm ci` runs from the repo root, where @prisma/client's postinstall
+      # cannot find api/prisma/schema.prisma. Without this the typed client is
+      # never generated and the api has no Prisma model types to check against.
+      - run: npm run prisma:generate -w api
       - run: npm run lint --workspaces --if-present
       - run: npm run typecheck --workspaces --if-present
 
@@ -35,6 +39,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - run: npm run prisma:generate -w api
       - run: npm run test --workspaces --if-present
 
   lint-python:
@@ -49,7 +54,9 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      - run: pip install ruff black mypy
+      # Pinned, so a new ruff or black release cannot fail a commit that
+      # changed nothing. Bump these on purpose, together with the fixes.
+      - run: pip install ruff==0.17.5 black==26.10.1 mypy
       - run: pip install -r ${{ matrix.service }}/requirements.txt
         if: hashFiles(format('{0}/requirements.txt', matrix.service)) != ''
       - run: ruff check ${{ matrix.service }}
