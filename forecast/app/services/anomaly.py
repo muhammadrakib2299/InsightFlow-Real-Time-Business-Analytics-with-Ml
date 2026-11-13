@@ -48,10 +48,12 @@ def zscore_detect(
     std = roll.std(ddof=0)
 
     out: list[AnomalyResult] = []
-    for ds, value, mu, sigma in zip(df["ds"], values, mean, std):
+    for ds, value, mu, sigma in zip(df["ds"], values, mean, std, strict=True):
         ds_date = _to_date(ds)
         if np.isnan(mu) or np.isnan(sigma):
-            out.append(AnomalyResult(ds=ds_date, value=float(value), expected=None, is_anomaly=False))
+            out.append(
+                AnomalyResult(ds=ds_date, value=float(value), expected=None, is_anomaly=False)
+            )
             continue
         if sigma == 0:
             # No variance in the window — only flag if the value also
@@ -86,10 +88,12 @@ def iqr_detect(
         return []
     values = df["y"].astype(float)
     out: list[AnomalyResult] = []
-    for i, (ds, value) in enumerate(zip(df["ds"], values)):
+    for i, (ds, value) in enumerate(zip(df["ds"], values, strict=True)):
         ds_date = _to_date(ds)
         if i < window_days:
-            out.append(AnomalyResult(ds=ds_date, value=float(value), expected=None, is_anomaly=False))
+            out.append(
+                AnomalyResult(ds=ds_date, value=float(value), expected=None, is_anomaly=False)
+            )
             continue
         window = values.iloc[i - window_days : i].to_numpy()
         q1 = float(np.quantile(window, 0.25))

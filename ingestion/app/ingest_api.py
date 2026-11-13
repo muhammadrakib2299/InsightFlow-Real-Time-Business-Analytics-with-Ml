@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -18,9 +18,9 @@ router = APIRouter(prefix="/v1", tags=["ingest"])
 
 
 def _to_kafka_payload(evt: EventIn, ctx: ApiKeyContext) -> dict[str, object]:
-    occurred_at = evt.occurred_at or datetime.now(timezone.utc)
+    occurred_at = evt.occurred_at or datetime.now(UTC)
     if occurred_at.tzinfo is None:
-        occurred_at = occurred_at.replace(tzinfo=timezone.utc)
+        occurred_at = occurred_at.replace(tzinfo=UTC)
     return {
         "workspace_id": ctx.workspace_id,
         "event_id": str(evt.event_id),
@@ -44,7 +44,7 @@ def _to_kafka_payload(evt: EventIn, ctx: ApiKeyContext) -> dict[str, object]:
         # Forwarded so the consumer can do IP-based geo enrichment.
         # The IP itself is never persisted in ClickHouse.
         "_ingest": {
-            "received_at": datetime.now(timezone.utc).isoformat(),
+            "received_at": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -73,9 +73,8 @@ async def post_event(
     # geo enrichment without re-parsing headers. Caddy forwards via
     # X-Forwarded-For; uvicorn already trusts the proxy via --forwarded-allow-ips
     # (set in compose).
-    source_ip = (
-        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        or (request.client.host if request.client else "")
+    source_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (
+        request.client.host if request.client else ""
     )
 
     producer = await Producer.get()

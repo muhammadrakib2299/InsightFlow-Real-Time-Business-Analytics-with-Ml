@@ -14,7 +14,7 @@ import asyncio
 import logging
 import signal
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import clickhouse_connect
@@ -56,14 +56,14 @@ CH_COLUMNS = (
 
 def _parse_dt(raw: str | None) -> datetime:
     if not raw:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     try:
         # fromisoformat handles offsets in 3.11+
         dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt
 
 
@@ -85,7 +85,9 @@ def _enrich_row(event: dict[str, Any]) -> tuple:
         os_ = os_ or o2
         browser = browser or b2
 
-    properties = {str(k): "" if v is None else str(v) for k, v in (event.get("properties") or {}).items()}
+    properties = {
+        str(k): "" if v is None else str(v) for k, v in (event.get("properties") or {}).items()
+    }
 
     return (
         event["workspace_id"],
@@ -184,9 +186,8 @@ class ConsumerWorker:
                         self._pending_partitions[tp] = msg.offset
 
                 now = asyncio.get_event_loop().time()
-                should_flush = (
-                    len(self._buffer) >= BATCH_MAX_ROWS
-                    or (self._buffer and now - self._last_flush_at >= BATCH_MAX_INTERVAL_S)
+                should_flush = len(self._buffer) >= BATCH_MAX_ROWS or (
+                    self._buffer and now - self._last_flush_at >= BATCH_MAX_INTERVAL_S
                 )
                 if should_flush:
                     await self._flush()
