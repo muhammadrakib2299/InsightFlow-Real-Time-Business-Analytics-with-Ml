@@ -9,7 +9,7 @@ hourly merge-aggregates in `kpi_hourly` — we sum those into days.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import clickhouse_connect
 import pandas as pd
@@ -57,7 +57,7 @@ def fetch_daily(
     callers cannot accidentally drop it.
     """
     settings = get_settings()
-    end = end or datetime.now(timezone.utc)
+    end = end or datetime.now(UTC)
     end = end.replace(hour=0, minute=0, second=0, microsecond=0)
     train_window_days = train_window_days or settings.train_window_days
     start = end - timedelta(days=train_window_days)
@@ -71,6 +71,9 @@ def fetch_daily(
         compress=True,
     )
     try:
+        # Not an injection vector: `_agg_select` returns one of three fixed
+        # expressions and raises on anything else, and every caller-supplied
+        # value below is a bound server-side parameter.
         sql = f"""
             SELECT
                 toDate(hour) AS ds,
@@ -82,7 +85,7 @@ def fetch_daily(
               AND hour <  {{end:DateTime}}
             GROUP BY ds
             ORDER BY ds
-        """
+        """  # noqa: S608
         result = client.query(
             sql,
             parameters={
@@ -119,4 +122,6 @@ def fetch_daily(
         earliest=str(earliest),
         latest=str(latest),
     )
-    return DailySeries(df=df, workspace_id=workspace_id, metric=metric_name, earliest=earliest, latest=latest)
+    return DailySeries(
+        df=df, workspace_id=workspace_id, metric=metric_name, earliest=earliest, latest=latest
+    )

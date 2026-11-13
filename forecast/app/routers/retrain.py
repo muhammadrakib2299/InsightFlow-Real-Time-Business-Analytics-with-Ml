@@ -32,7 +32,7 @@ def _retrain_pair(pair: RetrainPair) -> tuple[bool, bool, str | None]:
     try:
         prophet_runner.fit_and_persist(pair.workspace_id, pair.metric)
         prophet_ok = True
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         errors.append(f"prophet: {exc}")
         logger.warning(
             "retrain.prophet_failed",
@@ -44,7 +44,7 @@ def _retrain_pair(pair: RetrainPair) -> tuple[bool, bool, str | None]:
     try:
         arima_runner.fit_and_persist(pair.workspace_id, pair.metric)
         arima_ok = True
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         errors.append(f"arima: {exc}")
         logger.warning(
             "retrain.arima_failed",
@@ -73,15 +73,13 @@ async def post_retrain(
         return RetrainResponse(queued=0, detail="no active workspaces or metrics to retrain")
 
     loop = asyncio.get_running_loop()
-    results = await asyncio.gather(
-        *(loop.run_in_executor(None, _retrain_pair, p) for p in pairs)
-    )
+    results = await asyncio.gather(*(loop.run_in_executor(None, _retrain_pair, p) for p in pairs))
 
     fits_ok = sum(1 for prophet_ok, _, _ in results if prophet_ok) + sum(
         1 for _, arima_ok, _ in results if arima_ok
     )
     failures = [
-        (pair, err) for pair, (_, _, err) in zip(pairs, results) if err is not None
+        (pair, err) for pair, (_, _, err) in zip(pairs, results, strict=True) if err is not None
     ]
 
     detail_parts = [f"pairs={len(pairs)}", f"models_fit={fits_ok}"]
@@ -90,7 +88,5 @@ async def post_retrain(
         # Surface the first few errors so cron logs are usable
         sample = "; ".join(f"{p.workspace_id}/{p.metric}: {err}" for p, err in failures[:3])
         detail_parts.append(f"sample=[{sample}]")
-    logger.info(
-        "retrain.done", pairs=len(pairs), fits_ok=fits_ok, failures=len(failures)
-    )
+    logger.info("retrain.done", pairs=len(pairs), fits_ok=fits_ok, failures=len(failures))
     return RetrainResponse(queued=fits_ok, detail=" ".join(detail_parts))

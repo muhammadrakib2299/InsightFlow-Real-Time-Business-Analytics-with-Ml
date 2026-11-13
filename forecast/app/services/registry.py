@@ -19,7 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -71,7 +71,7 @@ def save(
 ) -> ArtifactRef:
     target_dir = _dir_for(workspace_id, metric)
     target_dir.mkdir(parents=True, exist_ok=True)
-    fitted_at = datetime.now(timezone.utc).isoformat()
+    fitted_at = datetime.now(UTC).isoformat()
     safe_ts = fitted_at.replace(":", "").replace(".", "")
     artifact_path = target_dir / f"{model_kind}__{safe_ts}.pkl"
     manifest_path = artifact_path.with_suffix(".manifest.json")

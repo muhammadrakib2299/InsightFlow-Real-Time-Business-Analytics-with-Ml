@@ -6,7 +6,7 @@ import numpy as np
 
 
 def mape(actual: np.ndarray, predicted: np.ndarray) -> float:
-    """Mean Absolute Percentage Error (0–∞, lower is better).
+    """Mean Absolute Percentage Error (0 to ∞, lower is better).
 
     Skips points where actual is 0 to avoid divide-by-zero blowing up
     on a sparse series. If everything is zero we return NaN — callers

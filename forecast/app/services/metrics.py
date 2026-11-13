@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-
 AggregationKind = Literal["sum_revenue", "count_events", "unique_users"]
 
 

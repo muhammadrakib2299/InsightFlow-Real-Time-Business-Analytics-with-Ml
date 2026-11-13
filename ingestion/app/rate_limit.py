@@ -12,6 +12,7 @@ import redis.asyncio as aioredis
 
 from .settings import get_settings
 
+# A Lua script, not a credential: "TOKEN" in the name is what trips S105.
 _LUA_TOKEN_BUCKET = """
 local key       = KEYS[1]
 local rate      = tonumber(ARGV[1])     -- tokens per second
@@ -43,7 +44,7 @@ redis.call("HSET", key, "tokens", tokens, "ts", now_ms)
 redis.call("PEXPIRE", key, math.ceil((burst / rate) * 1000) + 60000)
 
 return {allowed, tostring(tokens)}
-"""
+"""  # noqa: S105
 
 
 class RateLimiter:

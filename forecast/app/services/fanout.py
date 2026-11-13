@@ -1,6 +1,6 @@
 """Enumerate (workspace_id, metric) pairs that need retraining.
 
-The naive "every workspace × every metric" cross-product is fine for
+The naive "every workspace x every metric" cross-product is fine for
 the demo: a single workspace with 5 metrics, retraining in a few
 minutes. For a production fleet we'd persist a "metrics in use" set
 per workspace based on widget configs — that's filed under M3+
@@ -12,8 +12,8 @@ events at all and pair them with the static METRICS allowlist.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
 import clickhouse_connect
 import structlog
@@ -41,13 +41,11 @@ def active_workspaces() -> list[str]:
         compress=True,
     )
     try:
-        res = client.query(
-            """
+        res = client.query("""
             SELECT DISTINCT workspace_id
             FROM kpi_hourly
             WHERE hour >= now() - INTERVAL 90 DAY
-            """
-        )
+            """)
         rows = res.result_rows
     finally:
         client.close()

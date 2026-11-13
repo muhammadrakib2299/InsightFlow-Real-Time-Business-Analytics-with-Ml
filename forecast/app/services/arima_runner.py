@@ -13,7 +13,7 @@ library upgrades.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -98,7 +98,7 @@ def fit_and_persist(
         last_index=df["ds"].iloc[-1],
         interval_width=0.80,
     )
-    fitted_at = datetime.now(timezone.utc).isoformat()
+    fitted_at = datetime.now(UTC).isoformat()
     ref = save(
         workspace_id=workspace_id,
         metric=metric_name,
@@ -107,7 +107,7 @@ def fit_and_persist(
         training_window_days=training_window_days or 540,
         mape=holdout_mape,
         extras={
-            "n_rows": int(len(df)),
+            "n_rows": len(df),
             "order": list(artifact.order),
             "seasonal_order": list(artifact.seasonal_order),
             "earliest": str(series.earliest),
@@ -135,13 +135,14 @@ def forecast_from_artifact(artifact: ArimaArtifact, *, horizon_days: int) -> dic
     across versions; the order + history are stable inputs.
     """
     import pmdarima as pm
-    from scipy.stats import norm
 
     values = artifact.history["y"].to_numpy()
     model = pm.ARIMA(order=artifact.order, seasonal_order=artifact.seasonal_order)
     model.fit(values)
 
-    yhat, conf_int = model.predict(n_periods=horizon_days, return_conf_int=True, alpha=1 - artifact.interval_width)
+    yhat, conf_int = model.predict(
+        n_periods=horizon_days, return_conf_int=True, alpha=1 - artifact.interval_width
+    )
     # pmdarima's conf_int is (n_periods, 2) — order [lower, upper]
     yhat_lower = conf_int[:, 0]
     yhat_upper = conf_int[:, 1]

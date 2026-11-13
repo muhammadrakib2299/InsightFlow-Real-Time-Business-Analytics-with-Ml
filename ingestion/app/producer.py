@@ -15,7 +15,7 @@ logger = structlog.get_logger(__name__)
 
 
 class Producer:
-    _instance: "Producer | None" = None
+    _instance: Producer | None = None
     _lock = asyncio.Lock()
 
     def __init__(self) -> None:
@@ -34,7 +34,7 @@ class Producer:
         self._started = False
 
     @classmethod
-    async def get(cls) -> "Producer":
+    async def get(cls) -> Producer:
         if cls._instance is None:
             async with cls._lock:
                 if cls._instance is None:
@@ -65,9 +65,7 @@ class Producer:
         # Fan out to per-event sends so the producer can batch by partition;
         # send_and_wait on each is fine because the producer batches under the
         # hood with linger_ms.
-        futures = [
-            self._producer.send(self._topic, value=evt, key=workspace_id) for evt in events
-        ]
+        futures = [self._producer.send(self._topic, value=evt, key=workspace_id) for evt in events]
         for fut in futures:
             await fut
 

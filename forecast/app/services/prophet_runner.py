@@ -16,10 +16,9 @@ same contract (see arima_runner.py).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import structlog
 
@@ -101,7 +100,7 @@ def fit_and_persist(
         model = _build_model()
         model.fit(df)
 
-    fitted_at = datetime.now(timezone.utc).isoformat()
+    fitted_at = datetime.now(UTC).isoformat()
     ref = save(
         workspace_id=workspace_id,
         metric=metric_name,
@@ -110,7 +109,7 @@ def fit_and_persist(
         training_window_days=training_window_days or 540,
         mape=holdout_mape,
         extras={
-            "n_rows": int(len(df)),
+            "n_rows": len(df),
             "earliest": str(series.earliest),
             "latest": str(series.latest),
             "holdout_days": holdout,
@@ -144,7 +143,7 @@ def forecast_from_artifact(
         forecast=forecast,
         mape=None,
         model_kind="prophet",
-        fitted_at=datetime.now(timezone.utc).isoformat(),
+        fitted_at=datetime.now(UTC).isoformat(),
     )
 
 
