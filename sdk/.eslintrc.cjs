@@ -1,7 +1,9 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: 'tsconfig.json',
+    // The build tsconfig excludes *.test.ts so tests never ship in dist/.
+    // Linting still covers them, so it needs a project that includes them.
+    project: 'tsconfig.eslint.json',
     tsconfigRootDir: __dirname,
     sourceType: 'module',
   },
